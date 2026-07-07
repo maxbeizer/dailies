@@ -9,14 +9,14 @@ renderManifest: artifacts/tsrs/line-voices.render.json
 evaluation: artifacts/tsrs/line-voices.evaluation.json
 ---
 
-# Different lines can sound different
+# A voice is part of the interface
 
-This demo shows line identity moving from text labels into recognizable voices.
+This demo shows voice identity as part of how TSRS lines are recognized.
 
 ```dailies:editor
 # Relay line voice demo
 
-When every line sounds the same, my ear has to route the update after the words land. Per-line voices let the Blog, Brain, and PR review lines carry identity before I think about it.
+Each TSRS line is a workstream. When the Brain, TSRS, and Blog lines have different voices, I can recognize the work before I parse the label.
 ```
 
 ```dailies:terminal
@@ -37,30 +37,30 @@ mode: declared-fixture
 ```
 
 ```dailies:terminal
-$ relay --line "Blog" --message "The voice post has a draft."
-queued relay #2 Blog: The voice post has a draft.
+$ relay --line "Tri-State Relay Service" --message "Kokoro voices are wired in."
+queued relay #2 Tri-State Relay Service: Kokoro voices are wired in.
 ```
 
 ```dailies:audio-cue
-line: Blog
+line: Tri-State Relay Service
 voice: am_puck
 sayVoice: Daniel
-text: The voice post has a draft.
-output: artifacts/tsrs/audio/blog-voice-post-draft.mp3
+text: Kokoro voices are wired in.
+output: artifacts/tsrs/audio/tsrs-kokoro-voices-wired.mp3
 mode: declared-fixture
 ```
 
 ```dailies:terminal
-$ relay --line "PR review" --message "One test failure needs attention."
-queued relay #3 PR review: One test failure needs attention.
+$ relay --line "Blog" --message "The voice post has a draft."
+queued relay #3 Blog: The voice post has a draft.
 ```
 
 ```dailies:audio-cue
-line: PR review
+line: Blog
 voice: bf_emma
 sayVoice: Moira
-text: One test failure needs attention.
-output: artifacts/tsrs/audio/pr-review-test-failure.mp3
+text: The voice post has a draft.
+output: artifacts/tsrs/audio/blog-voice-post-draft.mp3
 mode: declared-fixture
 ```
 
