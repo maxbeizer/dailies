@@ -79,17 +79,20 @@ export function renderPreviewHtml(timeline) {
       height: 720px;
       overflow: hidden;
       position: relative;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) 6px;
+      row-gap: 14px;
       background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(3, 7, 18, 0.98));
       border: 1px solid rgba(148, 163, 184, 0.18);
       box-shadow: var(--shadow);
-      padding: 28px 34px 22px;
+      padding: 38px 34px 18px;
     }
 
     .surfaces {
       display: grid;
       grid-template-columns: 0.92fr 1.08fr;
       gap: 24px;
-      height: 626px;
+      min-height: 0;
     }
 
     .surface {
@@ -248,10 +251,6 @@ export function renderPreviewHtml(timeline) {
     .bar:nth-child(5) { height: 12px; animation-delay: 480ms; }
 
     .timeline {
-      position: absolute;
-      left: 34px;
-      right: 34px;
-      bottom: 18px;
       height: 6px;
       border-radius: 999px;
       background: rgba(148, 163, 184, 0.18);
