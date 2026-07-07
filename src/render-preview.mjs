@@ -128,52 +128,50 @@ export function renderPreviewHtml(timeline) {
     .surface {
       position: relative;
       min-width: 0;
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      background: rgba(15, 23, 42, 0.86);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.78);
       overflow: hidden;
-      box-shadow: 0 16px 44px rgba(0, 0, 0, 0.22);
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.2);
     }
 
     .surface.active {
-      border-color: rgba(56, 189, 248, 0.58);
-      box-shadow: 0 20px 60px rgba(56, 189, 248, 0.13);
+      border-color: rgba(56, 189, 248, 0.42);
+      box-shadow: 0 16px 46px rgba(56, 189, 248, 0.1);
     }
 
     .surface-header {
-      height: 48px;
+      height: 28px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 18px;
-      background: rgba(2, 6, 23, 0.58);
-      border-bottom: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      padding: 0 12px;
+      background: rgba(2, 6, 23, 0.28);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
     }
 
     .dots {
       display: flex;
-      gap: 7px;
+      gap: 6px;
     }
 
     .dot {
-      width: 10px;
-      height: 10px;
+      width: 7px;
+      height: 7px;
       border-radius: 999px;
-      background: #475569;
+      background: rgba(148, 163, 184, 0.42);
     }
 
-    .dot:nth-child(1) { background: #f87171; }
-    .dot:nth-child(2) { background: #fbbf24; }
-    .dot:nth-child(3) { background: #34d399; }
+    .chrome-line {
+      width: 44px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.22);
+    }
 
     .editor-body,
     .terminal-body {
-      padding: 22px;
+      padding: 18px 20px 22px;
       font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
       font-size: 18px;
       line-height: 1.44;
@@ -198,11 +196,11 @@ export function renderPreviewHtml(timeline) {
 
     .terminal-body {
       background: #050914;
-      height: calc(100% - 48px);
+      height: calc(100% - 28px);
       overflow: hidden;
       color: #d1fae5;
       scroll-behavior: auto;
-      padding-bottom: 46px;
+      padding-bottom: 34px;
     }
 
     .terminal-line {
@@ -351,17 +349,17 @@ export function renderPreviewHtml(timeline) {
       <div class="brand">Relay CLI demo</div>
     </header>
     <section class="surfaces">
-      <article class="surface editor active" data-surface="editor">
-        <div class="surface-header">
-          <span>Scenario.md</span>
+      <article class="surface editor active" data-surface="editor" aria-label="Scenario editor">
+        <div class="surface-header" aria-hidden="true">
+          <span class="chrome-line"></span>
           <span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
         </div>
         <div id="editorText" class="editor-body"></div>
       </article>
-      <article class="surface terminal" data-surface="terminal">
-        <div class="surface-header">
-          <span>relay — fixture terminal</span>
-          <span>Focus mode</span>
+      <article class="surface terminal" data-surface="terminal" aria-label="Relay terminal">
+        <div class="surface-header" aria-hidden="true">
+          <span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
+          <span class="chrome-line"></span>
         </div>
         <div id="terminalText" class="terminal-body"></div>
       </article>

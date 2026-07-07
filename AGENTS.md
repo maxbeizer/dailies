@@ -59,6 +59,8 @@ Dailies is an agentic demo workbench, not just a terminal recorder. The first Re
 
 Demo timing should feel like a real operator: editor text and terminal commands type quickly enough to stay engaging, while CLI output appears instantly after each command instead of being typed character by character.
 
+Rendered editor and terminal surfaces should keep chrome thin and quiet. Prioritize scenario content over labels, window decoration, and status text.
+
 Keep the core workflow anchored:
 
 1. **Deterministic prefix:** parse scenario files, compile timelines, collect declared artifacts, and scope command/audio inputs.
