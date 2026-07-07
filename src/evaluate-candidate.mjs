@@ -113,6 +113,7 @@ async function manifestMatchesAudioCues(manifest, cues) {
 async function sampleFrames(videoPath, timeline) {
   const base = path.basename(videoPath, ".mp4");
   const frameDir = path.resolve(PROJECT_ROOT, "artifacts", "tsrs", "frames");
+  await rm(frameDir, { recursive: true, force: true });
   await mkdir(frameDir, { recursive: true });
   const sampleSeconds = [0.25, 0.45, 0.82].map((ratio) => Math.max(1, Math.round(((timeline.durationMs || 1) / 1000) * ratio)));
   const frames = [];

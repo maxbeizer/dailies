@@ -111,11 +111,11 @@ function flushOutput(parts, output) {
 }
 
 function estimateTypingDuration(text) {
-  return Math.max(900, Math.ceil(text.length / 18) * 1000);
+  return Math.max(450, Math.ceil(text.length / 38) * 1000);
 }
 
 function estimateReadingDuration(text) {
-  return Math.max(700, Math.ceil(text.length / 45) * 1000);
+  return Math.max(300, Math.ceil(text.length / 110) * 1000);
 }
 
 function firstHeading(parsed) {

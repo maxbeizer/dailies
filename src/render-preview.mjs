@@ -186,7 +186,7 @@ export function renderPreviewHtml(timeline) {
     }
 
     .editor-body.typing::after,
-    .terminal-line.active::after {
+    .terminal-line.command.active::after {
       content: " ";
       display: inline-block;
       width: 0.62em;
@@ -412,7 +412,7 @@ export function renderPreviewHtml(timeline) {
     function draw(timeMs) {
       const state = renderDailiesState(timeline, clamp(timeMs, 0, durationMs));
       editorText.textContent = state.editorText;
-      editorText.classList.toggle("typing", state.activeSurface === "editor" && state.activeEvent && state.activeEvent.action === "type");
+      editorText.classList.toggle("typing", Boolean(state.editorTyping));
       terminalText.textContent = "";
       for (const entry of state.terminalEntries) {
         const line = document.createElement("div");

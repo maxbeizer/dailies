@@ -35,8 +35,7 @@ mode=focus muted=false
 #2 [queued] [normal] PR review: The reviewer found one bug.
 
 $ relay ready
-ready mode: releasing #1 Blog
-after playback: focus mode on
+ready to release one relay
 ```
 
 ```dailies:audio-cue
@@ -58,6 +57,8 @@ mode: declared-fixture
     "terminal_surface_present",
     "relay_commands_only",
     "fixture_only_execution",
+    "timeline_under_25_seconds",
+    "terminal_outputs_instant",
     "audio_cues_declared",
     "no_obvious_secrets_or_private_paths"
   ]

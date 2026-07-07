@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { parseDemoMarkdown } from "./parse-demo.mjs";
 import { compileTimeline, defaultTimelinePath, resolveArtifactOutputPath } from "./compile-timeline.mjs";
 import { defaultPreviewPath } from "./render-preview.mjs";
+import { renderState } from "./render-state.mjs";
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -33,6 +34,8 @@ export async function evaluateDemo(sourcePath) {
   check(checks, "self_review_json_valid", selfReviewJsonValid(parsed), "self-review block contains valid JSON");
   check(checks, "fixture_only_execution", parsed.frontmatter.executionMode === "fixture-only" && !/\bexec\s*:\s*true\b/i.test(markdown), "scenario is fixture-only and does not request live execution");
   check(checks, "relay_commands_only", relayCommandsOnly(parsed), "terminal command lines use the relay allowlist");
+  check(checks, "timeline_under_25_seconds", expectedTimeline.durationMs <= 25000, "compiled timeline stays under 25 seconds");
+  check(checks, "terminal_outputs_instant", terminalOutputsInstant(expectedTimeline), "terminal output events render fully as soon as they start");
   check(checks, "audio_cues_declared", audioCuesDeclared(parsed), "audio cue blocks declare line, text, output, and non-live mode");
   check(checks, "no_obvious_secrets_or_private_paths", noSecretPatterns(markdown), "scenario text does not match obvious secret or private-path patterns");
   check(checks, "timeline_artifact_exists", await exists(timelinePath), `timeline artifact exists at ${path.relative(PROJECT_ROOT, timelinePath)}`);
@@ -101,6 +104,16 @@ function audioCuesDeclared(parsed) {
   return cues.every((cue) => {
     const data = cue.data || {};
     return Boolean(data.line && data.text && data.output && data.mode === "declared-fixture" && isSafeArtifactPath(data.output));
+  });
+}
+
+function terminalOutputsInstant(timeline) {
+  const outputEvents = (timeline.events || []).filter((event) => event.surface === "terminal" && event.action === "show-output");
+  if (outputEvents.length === 0) return false;
+
+  return outputEvents.every((event) => {
+    const state = renderState(timeline, event.startMs);
+    return state.terminalEntries.some((entry) => entry.kind === "output" && entry.text === event.text);
   });
 }
 

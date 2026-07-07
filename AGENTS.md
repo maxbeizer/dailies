@@ -57,6 +57,8 @@ Recommended default checks:
 
 Dailies is an agentic demo workbench, not just a terminal recorder. The first Relay use case has two rendered surfaces: an editor-like surface where the user writes Markdown narration and a terminal-like surface where the same user types and runs `relay` commands. Future renderers can cut between those surfaces or show both at the same time.
 
+Demo timing should feel like a real operator: editor text and terminal commands type quickly enough to stay engaging, while CLI output appears instantly after each command instead of being typed character by character.
+
 Keep the core workflow anchored:
 
 1. **Deterministic prefix:** parse scenario files, compile timelines, collect declared artifacts, and scope command/audio inputs.

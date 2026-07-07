@@ -10,6 +10,13 @@ function revealText(text, startMs, durationMs, timeMs) {
   return text.slice(0, Math.round(text.length * progress));
 }
 
+function visibleTextForEvent(event, timeMs) {
+  if (event.action === "show-output") {
+    return timeMs >= event.startMs ? event.text : "";
+  }
+  return revealText(event.text, event.startMs, event.durationMs, timeMs);
+}
+
 function isActive(event, timeMs) {
   return timeMs >= event.startMs && timeMs < event.startMs + Math.max(event.durationMs, 900);
 }
@@ -35,7 +42,7 @@ function renderDailiesState(timeline, timeMs) {
     }
 
     if (event.surface === "terminal" && event.startMs <= timeMs) {
-      const text = revealText(event.text, event.startMs, event.durationMs, timeMs);
+      const text = visibleTextForEvent(event, timeMs);
       if (text) {
         terminalEntries.push({
           kind: event.action === "type-command" ? "command" : "output",
@@ -59,6 +66,7 @@ function renderDailiesState(timeline, timeMs) {
     progress: timeline.durationMs ? clamp(timeMs / timeline.durationMs, 0, 1) : 0,
     activeSurface,
     activeEvent,
+    editorTyping: activeEvent && activeEvent.surface === "editor" && activeEvent.action === "type" && isActive(activeEvent, timeMs),
     editorText: editorEvents.map((event) => event.text).join("\\n\\n"),
     terminalEntries,
     audioCue: audioCues.find((cue) => cue.active) || audioCues.at(-1) || null

@@ -30,6 +30,8 @@ The default check is intentionally offline and dependency-free. It parses one sc
 
 `render:candidate` is the full local candidate loop: compile, preview, evaluate the demo source, generate audio fixtures, render MP4, and run the candidate gate.
 
+Terminal command output appears instantly once a command finishes; only user-authored editor text and terminal commands are typed out.
+
 Generated artifacts for the first demo:
 
 - `artifacts/tsrs/queue.timeline.json`
