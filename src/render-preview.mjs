@@ -57,6 +57,7 @@ export function renderPreviewHtml(timeline) {
       --amber: #f59e0b;
       --green: #34d399;
       --shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+      --stage-padding: 34px;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
@@ -85,7 +86,7 @@ export function renderPreviewHtml(timeline) {
       background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(3, 7, 18, 0.98));
       border: 1px solid rgba(148, 163, 184, 0.18);
       box-shadow: var(--shadow);
-      padding: 38px 34px 18px;
+      padding: var(--stage-padding);
     }
 
     .surfaces {
