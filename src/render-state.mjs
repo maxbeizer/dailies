@@ -69,7 +69,7 @@ function renderDailiesState(timeline, timeMs) {
     editorTyping: activeEvent && activeEvent.surface === "editor" && activeEvent.action === "type" && isActive(activeEvent, timeMs),
     editorText: editorEvents.map((event) => event.text).join("\\n\\n"),
     terminalEntries,
-    audioCue: audioCues.find((cue) => cue.active) || audioCues.at(-1) || null
+    audioCue: audioCues.find((cue) => cue.active) || null
   };
 }
 `;

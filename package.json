@@ -11,6 +11,6 @@
     "render:candidate": "scripts/render-candidate",
     "evaluate:demo": "node src/evaluate-demo.mjs",
     "evaluate:candidate": "node src/evaluate-candidate.mjs",
-    "check": "node src/compile-timeline.mjs demos/tsrs/queue.demo.md && node src/render-preview.mjs demos/tsrs/queue.demo.md && node src/evaluate-demo.mjs demos/tsrs/queue.demo.md"
+    "check": "node src/check-demos.mjs"
   }
 }

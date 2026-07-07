@@ -36,6 +36,7 @@ export async function evaluateDemo(sourcePath) {
   check(checks, "relay_commands_only", relayCommandsOnly(parsed), "terminal command lines use the relay allowlist");
   check(checks, "timeline_under_25_seconds", expectedTimeline.durationMs <= 25000, "compiled timeline stays under 25 seconds");
   check(checks, "terminal_outputs_instant", terminalOutputsInstant(expectedTimeline), "terminal output events render fully as soon as they start");
+  check(checks, "audio_cues_do_not_linger", audioCuesDoNotLinger(expectedTimeline), "audio cue overlays disappear after the active cue window");
   check(checks, "audio_cues_declared", audioCuesDeclared(parsed), "audio cue blocks declare line, text, output, and non-live mode");
   check(checks, "no_obvious_secrets_or_private_paths", noSecretPatterns(markdown), "scenario text does not match obvious secret or private-path patterns");
   check(checks, "timeline_artifact_exists", await exists(timelinePath), `timeline artifact exists at ${path.relative(PROJECT_ROOT, timelinePath)}`);
@@ -114,6 +115,15 @@ function terminalOutputsInstant(timeline) {
   return outputEvents.every((event) => {
     const state = renderState(timeline, event.startMs);
     return state.terminalEntries.some((entry) => entry.kind === "output" && entry.text === event.text);
+  });
+}
+
+function audioCuesDoNotLinger(timeline) {
+  const audioEvents = (timeline.events || []).filter((event) => event.surface === "audio" && event.action === "declare-cue");
+  return audioEvents.every((event) => {
+    const afterCueWindowMs = event.startMs + 3500;
+    if (afterCueWindowMs >= (timeline.durationMs || 0)) return true;
+    return !renderState(timeline, afterCueWindowMs).audioCue;
   });
 }
 

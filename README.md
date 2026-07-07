@@ -13,6 +13,11 @@ The first demo target is Relay CLI in action:
 3. Audio cues are declared as fixtures and can later be generated through the non-speaking TSRS Speechify wrapper.
 4. The agent reviews source, timeline, audio declarations, generated artifacts, and evaluation reports before asking for feedback.
 
+Current Relay demos:
+
+- `demos/tsrs/queue.demo.md`: Focus mode queues updates until the user asks for one.
+- `demos/tsrs/live-mode.demo.md`: Live mode plays updates automatically while Mute remains the safety override.
+
 ## Commands
 
 ```sh
@@ -24,20 +29,25 @@ npm run check
 npm run render:video -- demos/tsrs/queue.demo.md
 npm run evaluate:candidate -- demos/tsrs/queue.demo.md
 npm run render:candidate -- demos/tsrs/queue.demo.md --provider say
+npm run render:candidate -- demos/tsrs/live-mode.demo.md --provider say
 ```
 
-The default check is intentionally offline and dependency-free. It parses one scenario, compiles a timeline JSON artifact, renders a self-contained HTML preview, and evaluates the scenario against the first self-review gates. `render:video` is opt-in because it depends on local ZShot availability.
+The default check is intentionally offline and dependency-free. It parses each scenario under `demos/`, compiles a timeline JSON artifact, renders a self-contained HTML preview, and evaluates each scenario against the first self-review gates. `render:video` is opt-in because it depends on local ZShot availability.
 
 `render:candidate` is the full local candidate loop: compile, preview, evaluate the demo source, generate audio fixtures, render MP4, and run the candidate gate.
 
 Terminal command output appears instantly once a command finishes; only user-authored editor text and terminal commands are typed out.
 
-Generated artifacts for the first demo:
+Generated artifacts for each demo follow the scenario frontmatter. The first two demos write:
 
 - `artifacts/tsrs/queue.timeline.json`
 - `artifacts/tsrs/queue.preview.html`
 - `artifacts/tsrs/queue.evaluation.json`
 - `artifacts/tsrs/queue.mp4` when `npm run render:video` succeeds
+- `artifacts/tsrs/live-mode.timeline.json`
+- `artifacts/tsrs/live-mode.preview.html`
+- `artifacts/tsrs/live-mode.evaluation.json`
+- `artifacts/tsrs/live-mode.mp4` when `npm run render:video` succeeds
 - `artifacts/tsrs/frames/*.webp` compact candidate-review frame samples
 
 Use `--provider speechify` with `generate:audio` only when real Speechify fixture generation is intended and local credentials are already configured. Set `TSRS_SPEECHIFY_HELPER` to the non-speaking TSRS wrapper path, or put a compatible `speechify` command on `PATH`. The default development path can use the local macOS `say` voice so the video has an audio cue without touching a paid/network provider.
