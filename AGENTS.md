@@ -31,11 +31,15 @@ Current commands:
 
 ```sh
 npm run compile:demo -- demos/tsrs/queue.demo.md
+npm run generate:audio -- demos/tsrs/queue.demo.md --provider say
+npm run render:preview -- demos/tsrs/queue.demo.md
 npm run evaluate:demo -- demos/tsrs/queue.demo.md
 npm run check
+npm run render:video -- demos/tsrs/queue.demo.md
+npm run evaluate:candidate -- demos/tsrs/queue.demo.md
 ```
 
-There are no third-party dependencies yet. Do not run `npm install` unless package manifests change or validation fails because an existing dependency is missing.
+There are no third-party npm dependencies yet. Do not run `npm install` unless package manifests change or validation fails because an existing dependency is missing. `render:video` uses the local ZShot CLI when available and is intentionally outside the default offline gate. `generate:audio --provider say` uses local macOS speech plus ffmpeg conversion; `--provider speechify` is opt-in because it is networked, credentialed, and potentially paid.
 
 ## ZShot Visual Harness
 
@@ -70,6 +74,7 @@ TSRS audio boundary:
 
 - Prefer the non-speaking TSRS Speechify wrapper for real audio fixtures when explicitly requested: `<app-bin>/speechify --text-file <text-file> --output-file <output-file> --voice-id <voice-id> --keychain-service TSRS_SPEECHIFY_API_KEY`.
 - The wrapper writes an audio file and never speaks directly. That makes it suitable for fixture generation, not live demo playback.
+- Configure Speechify through `TSRS_SPEECHIFY_HELPER` or a compatible `speechify` command on `PATH`; do not hard-code user-local absolute helper paths in source or artifacts.
 - Keep real Speechify generation opt-in because it is networked, credentialed, and potentially paid. The default evaluator must work offline.
 - Never store API keys, provider secrets, raw private Relay queue content, or generated provider metadata in this repo.
 
@@ -99,7 +104,9 @@ A demo candidate is not ready for human feedback just because it rendered. The a
 4. Audio cues are declared without requiring live speech or network synthesis by default.
 5. Secret/private-path scans pass across editor text, terminal text, captions, and audio cue text.
 6. Generated artifacts listed by the scenario exist, except outputs intentionally deferred by the current slice.
-7. Visual or playback evidence exists once rendering is implemented.
+7. Preview HTML exists, contains both surfaces, and does not expose private local paths.
+8. Video output exists before claiming there is a full candidate demo.
+9. Candidate frame samples use compact WebP by default; do not generate full-size PNGs unless lossless inspection is specifically needed.
 
 Deterministic checks can prove structure and obvious safety constraints. They cannot prove a video feels good, pacing is right, or audio is emotionally effective. Treat those as candidate-review findings, not automatic truth.
 
@@ -108,7 +115,8 @@ Deterministic checks can prove structure and obvious safety constraints. They ca
 1. Closest available validation passes.
 2. Behavior is verified automatically or manually.
 3. Documentation is updated when commands, behavior, workflow, or constraints change.
-4. Handoff names changed files and remaining risks.
+4. Completed local milestones are committed with a semantic commit once validation passes.
+5. Handoff names changed files and remaining risks.
 
 ## Ask First
 
@@ -117,4 +125,4 @@ Ask before:
 - touching broad or unrelated areas of the repo
 - introducing a new framework, background worker, MCP server, queue, or sub-agent layer
 - changing persistence, permissions, authentication, authorization, billing, or deployment behavior
-- committing or pushing if the user has not asked for it in this project
+- pushing to a remote if one is added and the user has not asked for publish/share behavior

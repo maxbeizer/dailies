@@ -3,6 +3,9 @@ title: The queue solved the interruption problem
 slug: tsrs-queue
 executionMode: fixture-only
 timeline: artifacts/tsrs/queue.timeline.json
+preview: artifacts/tsrs/queue.preview.html
+video: artifacts/tsrs/queue.mp4
+renderManifest: artifacts/tsrs/queue.render.json
 evaluation: artifacts/tsrs/queue.evaluation.json
 ---
 
@@ -32,7 +35,8 @@ mode=focus muted=false
 #2 [queued] [normal] PR review: The reviewer found one bug.
 
 $ relay ready
-ready to release one relay
+ready mode: releasing #1 Blog
+after playback: focus mode on
 ```
 
 ```dailies:audio-cue
@@ -46,7 +50,8 @@ mode: declared-fixture
 ```dailies:self-review
 {
   "requiredArtifacts": [
-    "artifacts/tsrs/queue.timeline.json"
+    "artifacts/tsrs/queue.timeline.json",
+    "artifacts/tsrs/queue.preview.html"
   ],
   "checks": [
     "editor_surface_present",

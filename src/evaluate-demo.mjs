@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseDemoMarkdown } from "./parse-demo.mjs";
 import { compileTimeline, defaultTimelinePath, resolveArtifactOutputPath } from "./compile-timeline.mjs";
+import { defaultPreviewPath } from "./render-preview.mjs";
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -21,6 +22,7 @@ export async function evaluateDemo(sourcePath) {
   const markdown = await readFile(absoluteSourcePath, "utf8");
   const parsed = parseDemoMarkdown(absoluteSourcePath, markdown);
   const timelinePath = resolveArtifactOutputPath(parsed.frontmatter.timeline || defaultTimelinePath(absoluteSourcePath));
+  const previewPath = resolveArtifactOutputPath(parsed.frontmatter.preview || defaultPreviewPath(absoluteSourcePath));
   const reportPath = resolveArtifactOutputPath(parsed.frontmatter.evaluation || defaultEvaluationPath(absoluteSourcePath));
   const expectedTimeline = compileTimeline(parsed);
   const checks = [];
@@ -38,6 +40,9 @@ export async function evaluateDemo(sourcePath) {
   check(checks, "timeline_has_no_private_paths", await timelineHasNoPrivatePaths(timelinePath), "timeline artifact does not expose local private paths");
   check(checks, "timeline_matches_scenario", await timelineMatchesScenario(timelinePath, expectedTimeline), "timeline artifact matches the current scenario");
   check(checks, "timeline_has_expected_surfaces", await timelineHasExpectedSurfaces(timelinePath), "timeline artifact includes editor and terminal events");
+  check(checks, "preview_artifact_exists", await exists(previewPath), `preview artifact exists at ${path.relative(PROJECT_ROOT, previewPath)}`);
+  check(checks, "preview_has_expected_surfaces", await previewHasExpectedSurfaces(previewPath), "preview artifact includes editor and terminal surfaces");
+  check(checks, "preview_has_no_private_paths", await textArtifactHasNoPrivatePaths(previewPath), "preview artifact does not expose local private paths");
 
   const selfReview = parsed.blocks.find((block) => block.type === "self-review")?.data;
   for (const artifact of selfReview?.requiredArtifacts || []) {
@@ -51,6 +56,7 @@ export async function evaluateDemo(sourcePath) {
     status,
     sourcePath: path.relative(PROJECT_ROOT, absoluteSourcePath),
     timelinePath: path.relative(PROJECT_ROOT, timelinePath),
+    previewPath: path.relative(PROJECT_ROOT, previewPath),
     generatedAt: new Date().toISOString(),
     checks,
   };
@@ -134,8 +140,24 @@ async function timelineHasExpectedSurfaces(timelinePath) {
 }
 
 async function timelineHasNoPrivatePaths(timelinePath) {
+  return textArtifactHasNoPrivatePaths(timelinePath);
+}
+
+async function previewHasExpectedSurfaces(previewPath) {
   try {
-    const raw = await readFile(timelinePath, "utf8");
+    const raw = await readFile(previewPath, "utf8");
+    return raw.includes('data-dailies-preview="true"')
+      && raw.includes('data-surface="editor"')
+      && raw.includes('data-surface="terminal"')
+      && raw.includes("renderDailiesState");
+  } catch {
+    return false;
+  }
+}
+
+async function textArtifactHasNoPrivatePaths(filePath) {
+  try {
+    const raw = await readFile(filePath, "utf8");
     return noSecretPatterns(raw);
   } catch {
     return false;

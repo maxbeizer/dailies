@@ -17,11 +17,25 @@ The first demo target is Relay CLI in action:
 
 ```sh
 npm run compile:demo -- demos/tsrs/queue.demo.md
+npm run generate:audio -- demos/tsrs/queue.demo.md --provider say
+npm run render:preview -- demos/tsrs/queue.demo.md
 npm run evaluate:demo -- demos/tsrs/queue.demo.md
 npm run check
+npm run render:video -- demos/tsrs/queue.demo.md
+npm run evaluate:candidate -- demos/tsrs/queue.demo.md
 ```
 
-The initial implementation is intentionally offline and dependency-free. It parses one scenario, compiles a timeline JSON artifact, and evaluates the scenario against the first self-review gates.
+The default check is intentionally offline and dependency-free. It parses one scenario, compiles a timeline JSON artifact, renders a self-contained HTML preview, and evaluates the scenario against the first self-review gates. `render:video` is opt-in because it depends on local ZShot availability.
+
+Generated artifacts for the first demo:
+
+- `artifacts/tsrs/queue.timeline.json`
+- `artifacts/tsrs/queue.preview.html`
+- `artifacts/tsrs/queue.evaluation.json`
+- `artifacts/tsrs/queue.mp4` when `npm run render:video` succeeds
+- `artifacts/tsrs/frames/*.webp` compact candidate-review frame samples
+
+Use `--provider speechify` with `generate:audio` only when real Speechify fixture generation is intended and local credentials are already configured. Set `TSRS_SPEECHIFY_HELPER` to the non-speaking TSRS wrapper path, or put a compatible `speechify` command on `PATH`. The default development path can use the local macOS `say` voice so the video has an audio cue without touching a paid/network provider.
 
 ## Agent harness
 

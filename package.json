@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "compile:demo": "node src/compile-timeline.mjs",
+    "generate:audio": "node src/generate-audio-fixtures.mjs",
+    "render:preview": "node src/render-preview.mjs",
+    "render:video": "node src/render-video.mjs",
     "evaluate:demo": "node src/evaluate-demo.mjs",
-    "check": "node src/compile-timeline.mjs demos/tsrs/queue.demo.md && node src/evaluate-demo.mjs demos/tsrs/queue.demo.md"
+    "evaluate:candidate": "node src/evaluate-candidate.mjs",
+    "check": "node src/compile-timeline.mjs demos/tsrs/queue.demo.md && node src/render-preview.mjs demos/tsrs/queue.demo.md && node src/evaluate-demo.mjs demos/tsrs/queue.demo.md"
   }
 }

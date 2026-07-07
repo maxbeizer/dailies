@@ -23,10 +23,13 @@ Use this skill for Dailies work that benefits from focused guidance beyond `AGEN
 
 1. **Plan:** write or update a scenario with editor text, terminal commands, expected output, audio cues, and self-review criteria.
 2. **Compile:** run `npm run compile:demo -- <scenario>` to produce a timeline artifact.
-3. **Evaluate:** run `npm run evaluate:demo -- <scenario>` and read the JSON report.
-4. **Iterate:** fix the scenario, compiler, or evaluator based on concrete findings.
-5. **Render:** once a renderer exists, produce WebM first and MP4 only through the approved conversion path.
-6. **Review:** inspect source, timeline, evaluation report, visual captures, audio manifest, and video before asking the user to watch.
+3. **Preview:** run `npm run render:preview -- <scenario>` to produce a self-contained local HTML preview.
+4. **Evaluate:** run `npm run evaluate:demo -- <scenario>` and read the JSON report.
+5. **Iterate:** fix the scenario, compiler, renderer, or evaluator based on concrete findings.
+6. **Audio:** run `npm run generate:audio -- <scenario> --provider say` for local speech fixtures, or use `--provider speechify` only when real provider output is intended.
+7. **Render:** run `npm run render:video -- <scenario>` only when a full candidate needs an MP4 artifact.
+8. **Candidate gate:** run `npm run evaluate:candidate -- <scenario>` and inspect sampled frames before asking the user to watch.
+9. **Review:** inspect source, timeline, preview, evaluation report, visual captures, audio manifest, and video before asking the user to watch.
 
 ## Quality Loop
 
