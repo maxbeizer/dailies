@@ -43,7 +43,7 @@ queued relay #2 Blog: The voice post has a draft.
 
 ```dailies:audio-cue
 line: Blog
-voice: af_bella
+voice: am_puck
 sayVoice: Daniel
 text: The voice post has a draft.
 output: artifacts/tsrs/audio/blog-voice-post-draft.mp3
@@ -57,8 +57,8 @@ queued relay #3 PR review: One test failure needs attention.
 
 ```dailies:audio-cue
 line: PR review
-voice: am_puck
-sayVoice: Fred
+voice: bf_emma
+sayVoice: Moira
 text: One test failure needs attention.
 output: artifacts/tsrs/audio/pr-review-test-failure.mp3
 mode: declared-fixture
