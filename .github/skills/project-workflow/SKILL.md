@@ -26,9 +26,9 @@ Use this skill for Dailies work that benefits from focused guidance beyond `AGEN
 3. **Preview:** run `npm run render:preview -- <scenario>` to produce a self-contained local HTML preview.
 4. **Evaluate:** run `npm run evaluate:demo -- <scenario>` and read the JSON report.
 5. **Iterate:** fix the scenario, compiler, renderer, or evaluator based on concrete findings.
-6. **Audio:** run `npm run generate:audio -- <scenario> --provider say` for local speech fixtures, or use `--provider speechify` only when real provider output is intended.
-7. **Render:** run `npm run render:video -- <scenario>` only when a full candidate needs an MP4 artifact.
-8. **Candidate gate:** run `npm run evaluate:candidate -- <scenario>` and inspect sampled frames before asking the user to watch.
+6. **Candidate:** run `npm run render:candidate -- <scenario> --provider say` for the complete local loop.
+7. **Audio:** use `npm run generate:audio -- <scenario> --provider speechify` only when real provider output is intended.
+8. **Candidate gate:** inspect `npm run evaluate:candidate -- <scenario>` output and sampled frames before asking the user to watch.
 9. **Review:** inspect source, timeline, preview, evaluation report, visual captures, audio manifest, and video before asking the user to watch.
 
 ## Quality Loop

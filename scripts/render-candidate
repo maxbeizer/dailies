@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+scenario=""
+provider="say"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --provider)
+      provider="${2:-}"
+      shift 2
+      ;;
+    *)
+      if [[ -z "$scenario" ]]; then
+        scenario="$1"
+        shift
+      else
+        echo "unexpected argument: $1" >&2
+        exit 2
+      fi
+      ;;
+  esac
+done
+
+if [[ -z "$scenario" ]]; then
+  scenario="demos/tsrs/queue.demo.md"
+fi
+
+npm run compile:demo -- "$scenario"
+npm run render:preview -- "$scenario"
+npm run evaluate:demo -- "$scenario"
+npm run generate:audio -- "$scenario" --provider "$provider"
+npm run render:video -- "$scenario"
+npm run evaluate:candidate -- "$scenario"

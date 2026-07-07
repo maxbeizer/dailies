@@ -37,9 +37,10 @@ npm run evaluate:demo -- demos/tsrs/queue.demo.md
 npm run check
 npm run render:video -- demos/tsrs/queue.demo.md
 npm run evaluate:candidate -- demos/tsrs/queue.demo.md
+npm run render:candidate -- demos/tsrs/queue.demo.md --provider say
 ```
 
-There are no third-party npm dependencies yet. Do not run `npm install` unless package manifests change or validation fails because an existing dependency is missing. `render:video` uses the local ZShot CLI when available and is intentionally outside the default offline gate. `generate:audio --provider say` uses local macOS speech plus ffmpeg conversion; `--provider speechify` is opt-in because it is networked, credentialed, and potentially paid.
+There are no third-party npm dependencies yet. Do not run `npm install` unless package manifests change or validation fails because an existing dependency is missing. `render:video` uses the local ZShot CLI when available and is intentionally outside the default offline gate. `generate:audio --provider say` uses local macOS speech plus ffmpeg conversion; `--provider speechify` is opt-in because it is networked, credentialed, and potentially paid. `render:candidate` runs the complete local candidate loop.
 
 ## ZShot Visual Harness
 

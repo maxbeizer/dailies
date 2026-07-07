@@ -23,9 +23,12 @@ npm run evaluate:demo -- demos/tsrs/queue.demo.md
 npm run check
 npm run render:video -- demos/tsrs/queue.demo.md
 npm run evaluate:candidate -- demos/tsrs/queue.demo.md
+npm run render:candidate -- demos/tsrs/queue.demo.md --provider say
 ```
 
 The default check is intentionally offline and dependency-free. It parses one scenario, compiles a timeline JSON artifact, renders a self-contained HTML preview, and evaluates the scenario against the first self-review gates. `render:video` is opt-in because it depends on local ZShot availability.
+
+`render:candidate` is the full local candidate loop: compile, preview, evaluate the demo source, generate audio fixtures, render MP4, and run the candidate gate.
 
 Generated artifacts for the first demo:
 
