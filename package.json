@@ -1,0 +1,11 @@
+{
+  "name": "dailies",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compile:demo": "node src/compile-timeline.mjs",
+    "evaluate:demo": "node src/evaluate-demo.mjs",
+    "check": "node src/compile-timeline.mjs demos/tsrs/queue.demo.md && node src/evaluate-demo.mjs demos/tsrs/queue.demo.md"
+  }
+}
