@@ -30,8 +30,13 @@ async function generateAudioFixtures(source, options) {
 
 async function generateWithSay(cue, textPath) {
   const tempAiff = `${cue.outputPath}.aiff`;
+  const sayArgs = ["-f", textPath, "-o", tempAiff];
+  if (cue.sayVoice) {
+    sayArgs.unshift("-v", cue.sayVoice);
+  }
+
   try {
-    await run("/usr/bin/say", ["-f", textPath, "-o", tempAiff]);
+    await run("/usr/bin/say", sayArgs);
     await run("ffmpeg", [
       "-hide_banner",
       "-loglevel",

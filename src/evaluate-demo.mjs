@@ -188,7 +188,8 @@ async function textArtifactHasNoPrivatePaths(filePath) {
 }
 
 function containsShellControl(command) {
-  return /(?:&&|\|\||[;|`<>]|\$\(|\${)/.test(command);
+  const withoutPlaceholders = command.replace(/<[a-z0-9-]+>/gi, "PLACEHOLDER");
+  return /(?:&&|\|\||[;|`<>]|\$\(|\${)/.test(withoutPlaceholders);
 }
 
 function isSafeArtifactPath(outputPath) {

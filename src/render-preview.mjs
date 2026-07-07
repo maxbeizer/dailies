@@ -384,7 +384,11 @@ export function renderPreviewHtml(timeline) {
       setSurface(state.activeSurface === "audio" ? "terminal" : state.activeSurface);
       if (state.audioCue) {
         cueCard.classList.add("visible");
-        cueText.textContent = (state.audioCue.cue.line || "Relay") + ": " + (state.audioCue.cue.text || "");
+        const voice = state.audioCue.cue.voice || state.audioCue.cue.sayVoice || "";
+        cueText.textContent = (state.audioCue.cue.line || "Relay")
+          + (voice ? " / " + voice : "")
+          + ": "
+          + (state.audioCue.cue.text || "");
       } else {
         cueCard.classList.remove("visible");
         cueText.textContent = "";
