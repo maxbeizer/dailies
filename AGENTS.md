@@ -59,7 +59,7 @@ Dailies is an agentic demo workbench, not just a terminal recorder. The first Re
 
 Demo timing should feel like a real operator: editor text and terminal commands type quickly enough to stay engaging, while CLI output appears instantly after each command instead of being typed character by character.
 
-Rendered editor and terminal surfaces should keep chrome thin and quiet. Prioritize scenario content over labels, window decoration, and status text.
+Rendered editor and terminal surfaces should keep chrome thin and quiet. Prioritize scenario content over labels, window decoration, and status text. Avoid outer branding/header chrome unless the scenario specifically needs it. When showing macOS-style window controls, keep them consistently on the left.
 
 Keep the core workflow anchored:
 

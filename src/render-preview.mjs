@@ -56,7 +56,6 @@ export function renderPreviewHtml(timeline) {
       --blue: #38bdf8;
       --amber: #f59e0b;
       --green: #34d399;
-      --red: #f87171;
       --shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
@@ -83,46 +82,14 @@ export function renderPreviewHtml(timeline) {
       background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(3, 7, 18, 0.98));
       border: 1px solid rgba(148, 163, 184, 0.18);
       box-shadow: var(--shadow);
-      padding: 34px;
-    }
-
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .status-light {
-      width: 13px;
-      height: 13px;
-      border-radius: 999px;
-      background: var(--red);
-      box-shadow: 0 0 24px rgba(248, 113, 113, 0.8);
-    }
-
-    .title {
-      font-size: 22px;
-      font-weight: 800;
-      color: #f8fafc;
+      padding: 28px 34px 22px;
     }
 
     .surfaces {
       display: grid;
       grid-template-columns: 0.92fr 1.08fr;
       gap: 24px;
-      height: 540px;
+      height: 626px;
     }
 
     .surface {
@@ -284,8 +251,8 @@ export function renderPreviewHtml(timeline) {
       position: absolute;
       left: 34px;
       right: 34px;
-      bottom: 28px;
-      height: 8px;
+      bottom: 18px;
+      height: 6px;
       border-radius: 999px;
       background: rgba(148, 163, 184, 0.18);
       overflow: hidden;
@@ -343,16 +310,11 @@ export function renderPreviewHtml(timeline) {
 </head>
 <body>
   <main id="stage" aria-label="Dailies preview stage">
-    <header class="header">
-      <div class="brand"><span class="status-light"></span><span>Dailies</span></div>
-      <div class="title">${title}</div>
-      <div class="brand">Relay CLI demo</div>
-    </header>
     <section class="surfaces">
       <article class="surface editor active" data-surface="editor" aria-label="Scenario editor">
         <div class="surface-header" aria-hidden="true">
-          <span class="chrome-line"></span>
           <span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
+          <span class="chrome-line"></span>
         </div>
         <div id="editorText" class="editor-body"></div>
       </article>
