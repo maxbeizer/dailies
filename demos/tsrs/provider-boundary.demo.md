@@ -1,5 +1,5 @@
 ---
-title: Provider voices still fail quiet
+title: Kokoro voices still fail quiet
 slug: tsrs-provider-boundary
 executionMode: fixture-only
 timeline: artifacts/tsrs/provider-boundary.timeline.json
@@ -9,36 +9,47 @@ renderManifest: artifacts/tsrs/provider-boundary.render.json
 evaluation: artifacts/tsrs/provider-boundary.evaluation.json
 ---
 
-# Provider voices still fail quiet
+# Kokoro voices still fail quiet
 
-This demo shows the advanced voice boundary: TSRS can hand text to a file-writing voice command, but the app still owns playback and safety checks.
+This demo shows the advanced voice boundary: TSRS can hand text to a local Kokoro helper, but the app still owns playback and safety checks.
 
 ```dailies:editor
 # Relay provider boundary demo
 
-The provider path is opt-in. The app stores secrets in Keychain, tracks local usage, and re-checks mute and focus before playing generated audio.
+Kokoro stays explicit. The app tracks local usage, keeps the Python and model install outside the app bundle, and re-checks mute and focus before playing generated audio.
 ```
 
 ```dailies:terminal
-$ relay config set --voice-command '<app-bin>/speechify --text-file <text-file> --output-file <output-file> --voice-id <voice-id> --keychain-service TSRS_SPEECHIFY_API_KEY'
+$ relay config show
 # Tri-State Relay Service advanced config.
 # Placeholders are inserted as single argv values, not shell-expanded.
 
 [voice]
-command = "<app-bin>/speechify --text-file <text-file> --output-file <output-file> --voice-id <voice-id> --keychain-service TSRS_SPEECHIFY_API_KEY"
+provider = "kokoro"
+command = "<app-bin>/kokoro --venv ~/.local/share/tsrs-kokoro/venv --text-file <text-file> --output-file <output-file> --voice-id <voice-id>"
+
+[kokoro]
+default_voice_id = "af_heart"
+auto_assign_line_voices = true
+catalog_command = "<app-bin>/kokoro voices --language a"
+assignment_strategy = "stable-hash"
+
+[kokoro.line_voices]
+Brain = "af_heart"
+"Tri-State Relay Service" = "am_puck"
 
 $ relay status
-{"profile":"direct","mode":"focus","muted":false,"spokenUsage":{"characters":0,"relays":0,"days":30}}
+{"profile":"direct","mode":"focus","muted":false,"voiceProvider":"kokoro","voiceProviderDefaultVoiceId":"af_heart","spokenUsage":{"characters":0,"relays":0,"days":30}}
 
-$ relay --line "Voice config" --message "Speechify stays opt-in, writes a file, and fails quiet."
-queued relay #1 Voice config: Speechify stays opt-in, writes a file, and fails quiet.
+$ relay --line "Voice config" --message "Kokoro stays opt-in, writes a file, and fails quiet."
+queued relay #1 Voice config: Kokoro stays opt-in, writes a file, and fails quiet.
 ```
 
 ```dailies:audio-cue
 line: Voice config
-voice: george
+voice: af_heart
 sayVoice: Karen
-text: Speechify stays opt-in, writes a file, and fails quiet.
+text: Kokoro stays opt-in, writes a file, and fails quiet.
 output: artifacts/tsrs/audio/voice-config-fails-quiet.mp3
 mode: declared-fixture
 ```

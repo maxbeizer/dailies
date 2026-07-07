@@ -6,6 +6,7 @@ import { readScenarioWithAudioCues, writeCueTextFile } from "./audio-cues.mjs";
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_SPEECHIFY_COMMAND = "speechify";
+const DEFAULT_KOKORO_COMMAND = path.resolve(PROJECT_ROOT, "../tri-state-relay-service/scripts/kokoro-voice-command");
 
 async function generateAudioFixtures(source, options) {
   const { cues } = await readScenarioWithAudioCues(source);
@@ -19,6 +20,8 @@ async function generateAudioFixtures(source, options) {
     const textPath = await writeCueTextFile(cue);
     if (options.provider === "speechify") {
       await generateWithSpeechify(cue, textPath, options);
+    } else if (options.provider === "kokoro") {
+      await generateWithKokoro(cue, textPath, options);
     } else {
       await generateWithSay(cue, textPath);
     }
@@ -68,11 +71,45 @@ async function generateWithSpeechify(cue, textPath, options) {
   ]);
 }
 
+async function generateWithKokoro(cue, textPath, options) {
+  const voiceId = cue.voice || "af_heart";
+  const outputExtension = path.extname(cue.outputPath).toLowerCase();
+  const synthesisPath = outputExtension === ".wav" ? cue.outputPath : `${cue.outputPath}.kokoro.wav`;
+  const args = [
+    "--text-file",
+    textPath,
+    "--output-file",
+    synthesisPath,
+    "--voice-id",
+    voiceId,
+  ];
+
+  try {
+    await run(options.kokoroCommand, args);
+    if (synthesisPath !== cue.outputPath) {
+      await run("ffmpeg", [
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        synthesisPath,
+        cue.outputPath,
+      ]);
+    }
+  } finally {
+    if (synthesisPath !== cue.outputPath) {
+      await rm(synthesisPath, { force: true });
+    }
+  }
+}
+
 function parseArgs(argv) {
   const args = {
     provider: "say",
     keychainService: "TSRS_SPEECHIFY_API_KEY",
     speechifyCommand: process.env.TSRS_SPEECHIFY_HELPER || DEFAULT_SPEECHIFY_COMMAND,
+    kokoroCommand: process.env.TSRS_KOKORO_HELPER || DEFAULT_KOKORO_COMMAND,
   };
   const positional = [];
 
@@ -84,13 +121,15 @@ function parseArgs(argv) {
       args.keychainService = argv[++index];
     } else if (value === "--speechify-command") {
       args.speechifyCommand = argv[++index];
+    } else if (value === "--kokoro-command") {
+      args.kokoroCommand = argv[++index];
     } else {
       positional.push(value);
     }
   }
 
-  if (!["say", "speechify"].includes(args.provider)) {
-    throw new Error("--provider must be say or speechify");
+  if (!["say", "speechify", "kokoro"].includes(args.provider)) {
+    throw new Error("--provider must be say, speechify, or kokoro");
   }
 
   return { source: positional[0], options: args };
@@ -117,7 +156,7 @@ async function main(argv) {
   try {
     const { source, options } = parseArgs(argv);
     if (!source) {
-      console.error("Usage: node src/generate-audio-fixtures.mjs <demo.md> [--provider say|speechify]");
+      console.error("Usage: node src/generate-audio-fixtures.mjs <demo.md> [--provider say|speechify|kokoro]");
       return 2;
     }
     const generated = await generateAudioFixtures(source, options);

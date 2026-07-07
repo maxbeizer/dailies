@@ -37,12 +37,15 @@ npm run evaluate:demo -- demos/tsrs/queue.demo.md
 npm run check
 npm run render:video -- demos/tsrs/queue.demo.md
 npm run evaluate:candidate -- demos/tsrs/queue.demo.md
+npm run render:candidate -- demos/tsrs/queue.demo.md --provider kokoro
 npm run render:candidate -- demos/tsrs/queue.demo.md --provider say
 npm run render:candidate -- demos/tsrs/live-mode.demo.md --provider say
 npm run render:candidate -- demos/tsrs/prune-before-ready.demo.md --provider say
+npm run render:candidate -- demos/tsrs/line-voices.demo.md --provider kokoro
+npm run render:candidate -- demos/tsrs/provider-boundary.demo.md --provider kokoro
 ```
 
-There are no third-party npm dependencies yet. Do not run `npm install` unless package manifests change or validation fails because an existing dependency is missing. `npm run check` discovers every `demos/**/*.demo.md` scenario and runs the offline preview/evaluation gate for each one. `render:video` uses the local ZShot CLI when available and is intentionally outside the default offline gate. `generate:audio --provider say` uses local macOS speech plus ffmpeg conversion; `--provider speechify` is opt-in because it is networked, credentialed, and potentially paid. `render:candidate` runs the complete local candidate loop.
+There are no third-party npm dependencies yet. Do not run `npm install` unless package manifests change or validation fails because an existing dependency is missing. `npm run check` discovers every `demos/**/*.demo.md` scenario and runs the offline preview/evaluation gate for each one. `render:video` uses the local ZShot CLI when available and is intentionally outside the default offline gate. `generate:audio --provider say` uses local macOS speech plus ffmpeg conversion; `--provider kokoro` uses the optional local TSRS Kokoro helper when its venv is installed; `--provider speechify` is opt-in because it is networked, credentialed, and potentially paid. `render:candidate` runs the complete local candidate loop.
 
 ## ZShot Visual Harness
 
@@ -80,7 +83,9 @@ Initial source layout:
 TSRS audio boundary:
 
 - Prefer the non-speaking TSRS Speechify wrapper for real audio fixtures when explicitly requested: `<app-bin>/speechify --text-file <text-file> --output-file <output-file> --voice-id <voice-id> --keychain-service TSRS_SPEECHIFY_API_KEY`.
+- Prefer the non-speaking TSRS Kokoro wrapper for local richer voice fixtures when the optional venv is installed: `<app-bin>/kokoro --venv ~/.local/share/tsrs-kokoro/venv --text-file <text-file> --output-file <output-file> --voice-id <voice-id>`.
 - The wrapper writes an audio file and never speaks directly. That makes it suitable for fixture generation, not live demo playback.
+- Configure Kokoro through `TSRS_KOKORO_HELPER` or the sibling TSRS helper path; do not hard-code user-local absolute helper paths in source or artifacts.
 - Configure Speechify through `TSRS_SPEECHIFY_HELPER` or a compatible `speechify` command on `PATH`; do not hard-code user-local absolute helper paths in source or artifacts.
 - Keep real Speechify generation opt-in because it is networked, credentialed, and potentially paid. The default evaluator must work offline.
 - Never store API keys, provider secrets, raw private Relay queue content, or generated provider metadata in this repo.

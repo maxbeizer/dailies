@@ -40,7 +40,7 @@ ready to release one relay
 
 ```dailies:audio-cue
 line: Blog
-voice: george
+voice: af_bella
 text: The draft is ready to review.
 output: artifacts/tsrs/audio/blog-draft-ready.mp3
 mode: declared-fixture

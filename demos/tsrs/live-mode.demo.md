@@ -29,7 +29,7 @@ queued relay #1 Deploy: Staging is green.
 
 ```dailies:audio-cue
 line: Deploy
-voice: george
+voice: am_puck
 text: Staging is green.
 output: artifacts/tsrs/audio/deploy-staging-green.mp3
 mode: declared-fixture
@@ -42,7 +42,7 @@ queued relay #2 Security review: One finding needs a decision.
 
 ```dailies:audio-cue
 line: Security review
-voice: george
+voice: af_nicole
 text: One finding needs a decision.
 output: artifacts/tsrs/audio/security-review-decision.mp3
 mode: declared-fixture

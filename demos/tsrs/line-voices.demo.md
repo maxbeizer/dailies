@@ -29,7 +29,7 @@ queued relay #1 Brain: Weekly prep is ready.
 
 ```dailies:audio-cue
 line: Brain
-voice: george
+voice: af_heart
 sayVoice: Samantha
 text: Weekly prep is ready.
 output: artifacts/tsrs/audio/brain-weekly-prep-ready.mp3
@@ -43,7 +43,7 @@ queued relay #2 Blog: The voice post has a draft.
 
 ```dailies:audio-cue
 line: Blog
-voice: henry
+voice: af_bella
 sayVoice: Daniel
 text: The voice post has a draft.
 output: artifacts/tsrs/audio/blog-voice-post-draft.mp3
@@ -57,7 +57,7 @@ queued relay #3 PR review: One test failure needs attention.
 
 ```dailies:audio-cue
 line: PR review
-voice: oliver
+voice: am_puck
 sayVoice: Fred
 text: One test failure needs attention.
 output: artifacts/tsrs/audio/pr-review-test-failure.mp3
