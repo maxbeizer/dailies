@@ -84,6 +84,8 @@ Initial source layout:
 
 Named sets are selected with the scenario `set` frontmatter key. The `attention-control-room` set uses validated `dailies:scene` JSON blocks and keeps its playback state separate from the legacy editor/terminal renderer. Multiple `dailies:audio-cue` blocks may precede one scene; their nonnegative `offsetMs` values are relative to that following scene, and compilation must fail rather than let a cue migrate into a later scene.
 
+`layout: ledger` is timeline-global even though headlines and camera state remain scene-based. Merge declared ledger entries and opted-in audio cues by absolute reveal time; never reset the stream at a scene boundary. Cumulative counters are authored snapshots, must remain monotonic, and should use aggregate values that are safe for the intended audience. Keep workspaces as a gauge rather than pretending they are cumulative.
+
 TSRS audio boundary:
 
 - Prefer the non-speaking TSRS Speechify wrapper for real audio fixtures when explicitly requested: `<app-bin>/speechify --text-file <text-file> --output-file <output-file> --voice-id <voice-id> --keychain-service TSRS_SPEECHIFY_API_KEY`.
@@ -124,6 +126,7 @@ A demo candidate is not ready for human feedback just because it rendered. The a
 7. Preview HTML exists, contains both surfaces, and does not expose private local paths.
 8. Video output exists before claiming there is a full candidate demo.
 9. Candidate frame samples use compact WebP by default; do not generate full-size PNGs unless lossless inspection is specifically needed.
+10. Scenarios with `maxAudioGapMs` prove pacing against actual generated cue durations, including the final tail.
 
 Deterministic checks can prove structure and obvious safety constraints. They cannot prove a video feels good, pacing is right, or audio is emotionally effective. Treat those as candidate-review findings, not automatic truth.
 

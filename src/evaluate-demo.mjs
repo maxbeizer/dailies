@@ -2,7 +2,7 @@ import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseDemoMarkdown } from "./parse-demo.mjs";
-import { compileTimeline, defaultTimelinePath, resolveArtifactOutputPath, validateSceneData } from "./compile-timeline.mjs";
+import { compileTimeline, defaultTimelinePath, ledgerCountersMonotonic, resolveArtifactOutputPath, validateSceneData } from "./compile-timeline.mjs";
 import { defaultPreviewPath } from "./render-preview.mjs";
 import { renderState } from "./render-state.mjs";
 
@@ -37,11 +37,18 @@ export async function evaluateDemo(sourcePath) {
   const maxDurationSeconds = Number(parsed.frontmatter.maxDurationSeconds || (set === ATTENTION_CONTROL_ROOM_SET ? 120 : 25));
 
   if (set === ATTENTION_CONTROL_ROOM_SET) {
+    const minSceneCount = Number(parsed.frontmatter.minSceneCount || 8);
     check(checks, "attention_control_room_set", expectedTimeline.set === ATTENTION_CONTROL_ROOM_SET, "timeline selects the attention control room set");
-    check(checks, "scene_blocks_present", parsed.blocks.filter((block) => block.type === "scene").length >= 8, "scenario has at least eight dailies:scene blocks");
+    check(checks, "scene_blocks_present", parsed.blocks.filter((block) => block.type === "scene").length >= minSceneCount, `scenario has at least ${minSceneCount} dailies:scene blocks`);
     check(checks, "scene_blocks_valid", sceneBlocksValid(parsed), "scene blocks contain valid, renderable JSON");
     check(checks, "scene_narration_aligned", sceneNarrationAligned(expectedTimeline), "each scene begins with an audio cue and all cues stay inside a scene");
     check(checks, "cutaway_scenes_labeled", cutawayScenesLabeled(parsed), "cutaway scenes declare their source and reenactment status");
+    check(checks, "reenactment_scenes_labeled", reenactmentScenesLabeled(parsed), "focused reenactment scenes declare their source and status");
+    if (expectedTimeline.events.some((event) => event.scene?.layout === "ledger")) {
+      check(checks, "ledger_counters_monotonic", ledgerCountersMonotonic(expectedTimeline), "ledger counters never move backwards");
+      const minLedgerEntries = Number(parsed.frontmatter.minLedgerEntries || 1);
+      check(checks, "ledger_activity_present", ledgerActivityCount(parsed) >= minLedgerEntries, `ledger declares at least ${minLedgerEntries} activity entries`);
+    }
     check(checks, "timeline_within_declared_limit", expectedTimeline.durationMs <= maxDurationSeconds * 1000, `compiled timeline stays under ${maxDurationSeconds} seconds`);
   } else {
     check(checks, "editor_surface_present", parsed.blocks.some((block) => block.type === "editor"), "scenario has a dailies:editor block");
@@ -71,6 +78,13 @@ export async function evaluateDemo(sourcePath) {
     const artifactPath = safeArtifactPath(artifact);
     check(checks, `required_artifact:${artifact}`, await exists(artifactPath), `required artifact exists at ${artifact}`);
   }
+  const checksByName = new Map(checks.map((item) => [item.name, item]));
+  check(
+    checks,
+    "self_review_checks_pass",
+    (selfReview?.checks || []).every((name) => checksByName.get(name)?.status === "pass"),
+    "every requested self-review check was executed and passed",
+  );
 
   const status = checks.every((item) => item.status === "pass") ? "pass" : "fail";
   const report = {
@@ -130,10 +144,26 @@ function sceneNarrationAligned(timeline) {
   return assigned.size === audioEvents.length;
 }
 
+function reenactmentScenesLabeled(parsed) {
+  return parsed.blocks
+    .filter((block) => block.type === "scene" && (block.data?.layout === "cutaway" || (block.data?.layout === "ledger" && block.data?.focus)))
+    .every((block) => block.data?.reenactment === true && typeof block.data?.sourceLabel === "string" && block.data.sourceLabel.trim());
+}
+
 function cutawayScenesLabeled(parsed) {
   return parsed.blocks
     .filter((block) => block.type === "scene" && block.data?.layout === "cutaway")
     .every((block) => block.data?.reenactment === true && typeof block.data?.sourceLabel === "string" && block.data.sourceLabel.trim());
+}
+
+function ledgerActivityCount(parsed) {
+  const declaredEntries = parsed.blocks
+    .filter((block) => block.type === "scene" && block.data?.layout === "ledger")
+    .reduce((count, block) => count + (block.data?.ledger?.length || 0), 0);
+  const dialogueEntries = parsed.blocks
+    .filter((block) => block.type === "audio-cue" && block.data?.showInLedger === true)
+    .length;
+  return declaredEntries + dialogueEntries;
 }
 
 function relayCommandsOnly(parsed) {
@@ -160,6 +190,9 @@ function audioCuesDeclared(parsed) {
     const provider = data.provider || parsed.frontmatter.audioProvider || null;
     const speedValid = data.speed === undefined
       || (provider === "kokoro" && Number.isFinite(Number(data.speed)) && Number(data.speed) > 0);
+    const ledgerValid = data.showInLedger !== true
+      || (typeof data.ledgerTime === "string" && data.ledgerTime.trim()
+        && typeof data.ledgerSource === "string" && data.ledgerSource.trim());
     return Boolean(
       data.line
       && data.text
@@ -167,7 +200,8 @@ function audioCuesDeclared(parsed) {
       && data.mode === "declared-fixture"
       && isSafeArtifactPath(data.output)
       && (!provider || ALLOWED_AUDIO_PROVIDERS.has(provider))
-      && speedValid,
+      && speedValid
+      && ledgerValid
     );
   });
 }

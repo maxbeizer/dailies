@@ -23,6 +23,7 @@ Current Relay demos:
 
 
 
+
 ## Commands
 
 ```sh
@@ -88,6 +89,10 @@ mode: declared-fixture
 ````
 
 Scene data is validated before compilation. Audio cues are bound to the following scene and compilation fails if an offset starts outside that scene. Actual generated cue durations are checked again during candidate evaluation. The control-room renderer supports `kicker`, `camera`, `accent`, `concurrency`, `foreground`, `lanes`, and `metrics` in addition to the required fields above.
+
+Ledger scenes use `layout: ledger`. Their compact `ledger` entries declare `id`, `time`, `source`, `text`, and a scene-relative `offsetMs`. Entries from every scene are merged into one timeline-global stream, so prior activity remains visible after the headline or focus changes. Audio cues can join the same stream with `showInLedger: true`, `ledgerTime`, and `ledgerSource`; the active dialogue row expands while ambient activity stays visible.
+
+Ledger `counters` are authored cumulative snapshots and must never move backwards across scenes. `maxAudioGapMs` adds a candidate-time pacing gate based on actual generated audio duration, including the final tail.
 
 ## Video renderers
 

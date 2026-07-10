@@ -104,6 +104,14 @@ export function compileTimeline(parsed) {
     timeline.maxDurationSeconds = maxDurationSeconds;
   }
 
+  if (parsed.frontmatter.maxAudioGapMs !== undefined) {
+    const maxAudioGapMs = Number(parsed.frontmatter.maxAudioGapMs);
+    if (!Number.isInteger(maxAudioGapMs) || maxAudioGapMs < 0) {
+      throw new Error("maxAudioGapMs must be a nonnegative integer");
+    }
+    timeline.maxAudioGapMs = maxAudioGapMs;
+  }
+
   return timeline;
 }
 
@@ -147,8 +155,8 @@ export function validateSceneData(data, index = 0) {
   }
 
   const layout = data.layout || "control-room";
-  if (!["control-room", "cutaway"].includes(layout)) {
-    throw new Error(`scene ${index + 1} layout must be control-room or cutaway`);
+  if (!["control-room", "cutaway", "ledger"].includes(layout)) {
+    throw new Error(`scene ${index + 1} layout must be control-room, cutaway, or ledger`);
   }
 
   if (layout === "cutaway") {
@@ -163,6 +171,42 @@ export function validateSceneData(data, index = 0) {
     }
   }
 
+  if (data.ledger !== undefined && !Array.isArray(data.ledger)) {
+    throw new Error(`scene ${index + 1} ledger must be an array`);
+  }
+
+  for (const entry of data.ledger || []) {
+    if (!entry || ["id", "time", "source", "text"].some((key) => typeof entry[key] !== "string" || !entry[key].trim())) {
+      throw new Error(`scene ${index + 1} ledger entries require id, time, source, and text`);
+    }
+    const offsetMs = entry.offsetMs ?? 0;
+    if (!Number.isInteger(offsetMs) || offsetMs < 0 || offsetMs >= data.durationMs) {
+      throw new Error(`scene ${index + 1} ledger entry offsetMs must start inside its scene`);
+    }
+  }
+
+  if (data.counters !== undefined && !Array.isArray(data.counters)) {
+    throw new Error(`scene ${index + 1} counters must be an array`);
+  }
+
+  for (const counter of data.counters || []) {
+    if (!counter || typeof counter.id !== "string" || !counter.id.trim() || typeof counter.label !== "string" || !counter.label.trim()) {
+      throw new Error(`scene ${index + 1} counters require id and label`);
+    }
+    if (!Number.isFinite(Number(counter.value)) || Number(counter.value) < 0) {
+      throw new Error(`scene ${index + 1} counter values must be nonnegative numbers`);
+    }
+  }
+
+  if (layout === "ledger" && data.focus !== undefined) {
+    if (!["copilot", "slack", "deployment"].includes(data.focus)) {
+      throw new Error(`scene ${index + 1} ledger focus must be copilot, slack, or deployment`);
+    }
+    if (data.reenactment !== true || typeof data.sourceLabel !== "string" || !data.sourceLabel.trim()) {
+      throw new Error(`scene ${index + 1} focused ledger scenes require a reenactment sourceLabel`);
+    }
+  }
+
   return {
     kicker: "",
     camera: "wide",
@@ -174,9 +218,24 @@ export function validateSceneData(data, index = 0) {
       action: data.headline,
     },
     lanes: [],
+    ledger: [],
+    counters: [],
     metrics: [],
     ...data,
   };
+}
+
+export function ledgerCountersMonotonic(timeline) {
+  const previous = new Map();
+  const ledgerScenes = (timeline.events || []).filter((event) => event.surface === "scene" && event.scene?.layout === "ledger");
+  for (const event of ledgerScenes) {
+    for (const counter of event.scene.counters || []) {
+      const value = Number(counter.value);
+      if (!Number.isFinite(value) || value < (previous.get(counter.id) ?? 0)) return false;
+      previous.set(counter.id, value);
+    }
+  }
+  return true;
 }
 
 export function defaultTimelinePath(sourcePath) {

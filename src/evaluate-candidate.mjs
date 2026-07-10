@@ -22,6 +22,10 @@ async function evaluateCandidate(source) {
   const manifestExists = await exists(manifestPath);
   await check(checks, "render_manifest_exists", manifestExists, `render manifest exists at ${path.relative(PROJECT_ROOT, manifestPath)}`);
   const manifest = await readJsonIfExists(manifestPath);
+  const metadata = videoExists ? await ffprobeIfPossible(videoPath) : null;
+  const videoStream = metadata?.streams?.find((stream) => stream.codec_type === "video");
+  const audioStream = metadata?.streams?.find((stream) => stream.codec_type === "audio");
+  const duration = Number(metadata?.format?.duration || 0);
   await check(checks, "preview_artifact_exists", exists(previewPath), `preview exists at ${path.relative(PROJECT_ROOT, previewPath)}`);
   await check(checks, "manifest_matches_current_preview", manifestMatchesPreview(manifest, previewPath), "render manifest matches the current preview");
   await check(checks, "manifest_matches_current_timeline", manifestMatchesTimeline(manifest, timeline), "render manifest matches the current compiled timeline");
@@ -29,15 +33,14 @@ async function evaluateCandidate(source) {
   await check(checks, "audio_fixtures_exist", Promise.all(cues.map((cue) => exists(cue.outputPath))).then((results) => results.every(Boolean)), "all declared audio cue files exist");
   await check(checks, "audio_fixtures_match_cue_config", audioFixturesMatchCueConfig(cues), "audio sidecars match current cue text and any declared provider, voice, and speed");
   await check(checks, "audio_cues_do_not_overlap", audioCuesDoNotOverlap(cues), "each narration cue finishes before the next cue begins");
+  if (timeline.maxAudioGapMs !== undefined) {
+    await check(checks, "audio_gaps_within_declared_limit", audioCuesRespectMaxGap(cues, timeline, timeline.maxAudioGapMs, duration * 1000), `quiet gaps stay at or below ${timeline.maxAudioGapMs}ms`);
+  }
   if ((timeline.events || []).some((event) => event.surface === "scene")) {
     await check(checks, "audio_cues_stay_within_scenes", audioCuesStayWithinScenes(cues, timeline), "each audio cue finishes before its assigned scene ends");
   }
   await check(checks, "manifest_matches_audio_cues", manifestMatchesAudioCues(manifest, cues), "render manifest audio cue hashes match current cues");
 
-  const metadata = videoExists ? await ffprobeIfPossible(videoPath) : null;
-  const videoStream = metadata?.streams?.find((stream) => stream.codec_type === "video");
-  const audioStream = metadata?.streams?.find((stream) => stream.codec_type === "audio");
-  const duration = Number(metadata?.format?.duration || 0);
   await check(checks, "video_is_1280x720", Boolean(videoStream && videoStream.width === 1280 && videoStream.height === 720), "video dimensions are 1280x720");
   await check(checks, "video_has_h264", videoStream?.codec_name === "h264", "video codec is H.264");
   await check(checks, "video_has_audio_stream", Boolean(audioStream), "video includes an audio stream");
@@ -48,6 +51,14 @@ async function evaluateCandidate(source) {
   }
   const sampledFrames = videoExists && metadata ? await sampleFramesIfPossible(videoPath, timeline) : [];
   await check(checks, "sampled_frames_exist", sampledFrames.length > 0 && Promise.all(sampledFrames.map((frame) => nonEmptyFile(frame.path))).then((results) => results.every(Boolean)), "candidate evaluation sampled non-empty video frames");
+  const candidateChecksByName = new Map(checks.map((item) => [item.name, item]));
+  const requestedCandidateChecks = parsed.blocks.find((block) => block.type === "self-review")?.data?.candidateChecks || [];
+  await check(
+    checks,
+    "self_review_candidate_checks_pass",
+    requestedCandidateChecks.every((name) => candidateChecksByName.get(name)?.status === "pass"),
+    "every requested candidate self-review check was executed and passed",
+  );
 
   const status = checks.every((item) => item.status === "pass") ? "pass" : "fail";
   return { status, checks, metadata, sampledFrames };
@@ -131,6 +142,21 @@ async function audioCuesDoNotOverlap(cues) {
     if (!durationMs || (cue.event?.startMs || 0) + durationMs > (nextCue.event?.startMs || 0)) {
       return false;
     }
+  }
+  return true;
+}
+
+async function audioCuesRespectMaxGap(cues, timeline, maxGapMs, videoDurationMs) {
+  const ordered = [...cues].sort((left, right) => (left.event?.startMs || 0) - (right.event?.startMs || 0));
+  if (ordered.length === 0 || (ordered[0].event?.startMs || 0) !== 0) return false;
+  for (let index = 0; index < ordered.length; index += 1) {
+    const cue = ordered[index];
+    const metadata = await ffprobe(cue.outputPath);
+    const durationMs = Number(metadata?.format?.duration || 0) * 1000;
+    const cueEndMs = (cue.event?.startMs || 0) + durationMs;
+    const nextStartMs = ordered[index + 1]?.event?.startMs ?? videoDurationMs ?? timeline.durationMs;
+    const gapMs = nextStartMs - cueEndMs;
+    if (!durationMs || gapMs < 0 || gapMs > maxGapMs) return false;
   }
   return true;
 }

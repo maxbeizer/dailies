@@ -4,11 +4,12 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { cueFixtureMatches, cueSynthesisFingerprint, writeCueFixtureSidecars } from "../src/audio-cues.mjs";
-import { compileTimeline } from "../src/compile-timeline.mjs";
+import { compileTimeline, ledgerCountersMonotonic } from "../src/compile-timeline.mjs";
 import { audioCuesStayWithinScenes } from "../src/evaluate-candidate.mjs";
 import { parseArgs, resolveAudioProvider } from "../src/generate-audio-fixtures.mjs";
 import { parseDemoMarkdown } from "../src/parse-demo.mjs";
 import { renderPreviewHtml } from "../src/render-preview.mjs";
+import { collectLedgerEntries } from "../src/sets/attention-control-room.mjs";
 
 const SCENE_SOURCE = `---
 title: Attention control
@@ -242,4 +243,133 @@ test("legacy fixtures adopt voice checks once metadata exists", async () => {
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+const LEDGER_SOURCE = `---
+title: Activity ledger
+set: attention-control-room
+maxDurationSeconds: 20
+---
+
+\`\`\`dailies:audio-cue
+line: @jonmagic
+role: operator
+text: First focused exchange.
+displayText: First focused exchange.
+showInLedger: true
+ledgerTime: 08:05
+ledgerSource: copilot
+output: artifacts/scenes/audio/ledger-first.mp3
+mode: declared-fixture
+\`\`\`
+
+\`\`\`dailies:scene
+{
+  "id": "ledger-one",
+  "durationMs": 5000,
+  "clock": "08:05",
+  "headline": "The ledger starts.",
+  "body": "Background activity remains visible.",
+  "layout": "ledger",
+  "focus": "copilot",
+  "reenactment": true,
+  "sourceLabel": "Copilot replay",
+  "concurrency": 3,
+  "ledger": [
+    {
+      "id": "brain-checkpoint",
+      "offsetMs": 1000,
+      "time": "08:07",
+      "source": "brain",
+      "text": "Source trail persisted."
+    }
+  ],
+  "counters": [
+    { "id": "tools", "value": 33, "label": "tool calls" },
+    { "id": "turns", "value": 11, "label": "assistant turns" },
+    { "id": "subagents", "value": 1, "label": "subagents" }
+  ]
+}
+\`\`\`
+
+\`\`\`dailies:audio-cue
+line: @billythekid
+role: collaborator
+text: Second focused exchange.
+displayText: Second focused exchange.
+showInLedger: true
+ledgerTime: 08:46
+ledgerSource: slack
+output: artifacts/scenes/audio/ledger-second.mp3
+mode: declared-fixture
+\`\`\`
+
+\`\`\`dailies:scene
+{
+  "id": "ledger-two",
+  "durationMs": 5000,
+  "clock": "08:46",
+  "headline": "The stream continues.",
+  "body": "The first scene does not disappear.",
+  "layout": "ledger",
+  "focus": "slack",
+  "reenactment": true,
+  "sourceLabel": "Public Slack replay",
+  "concurrency": 5,
+  "ledger": [
+    {
+      "id": "github-review",
+      "offsetMs": 1000,
+      "time": "08:48",
+      "source": "github",
+      "text": "Review requested."
+    }
+  ],
+  "counters": [
+    { "id": "tools", "value": 44, "label": "tool calls" },
+    { "id": "turns", "value": 18, "label": "assistant turns" },
+    { "id": "subagents", "value": 2, "label": "subagents" }
+  ]
+}
+\`\`\`
+`;
+
+test("ledger entries persist across scene boundaries", () => {
+  const timeline = compileTimeline(parseDemoMarkdown("/repo/demos/scenes/ledger.demo.md", LEDGER_SOURCE));
+  const entries = collectLedgerEntries(timeline);
+
+  assert.deepEqual(entries.map((entry) => entry.text), [
+    "First focused exchange.",
+    "Source trail persisted.",
+    "Second focused exchange.",
+    "Review requested.",
+  ]);
+  assert.deepEqual(entries.map((entry) => entry.revealMs), [0, 1000, 5000, 6000]);
+});
+
+test("ledger previews expose one global activity stream", () => {
+  const timeline = compileTimeline(parseDemoMarkdown("/repo/demos/scenes/ledger.demo.md", LEDGER_SOURCE));
+  const html = renderPreviewHtml(timeline);
+
+  assert.match(html, /class="ledger-view"/);
+  assert.match(html, /id="ledgerStream"/);
+  assert.match(html, /function drawLedger\(/);
+  assert.match(html, /reset 08:05/i);
+});
+
+test("ledger entries must reveal inside their declared scene", () => {
+  const parsed = parseDemoMarkdown(
+    "/repo/demos/scenes/invalid-ledger.demo.md",
+    LEDGER_SOURCE.replace('"offsetMs": 1000', '"offsetMs": 6000'),
+  );
+
+  assert.throws(() => compileTimeline(parsed), /ledger entry offsetMs/);
+});
+
+test("ledger counters cannot move backwards", () => {
+  const timeline = compileTimeline(parseDemoMarkdown("/repo/demos/scenes/ledger.demo.md", LEDGER_SOURCE));
+  assert.equal(ledgerCountersMonotonic(timeline), true);
+
+  timeline.events.find((event) => event.scene?.id === "ledger-two").scene.counters[0].value = 20;
+  assert.equal(ledgerCountersMonotonic(timeline), false);
 });

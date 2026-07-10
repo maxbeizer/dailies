@@ -1,7 +1,54 @@
 const LANE_ORDER = ["slack", "github", "copilot", "brain"];
 
+export function collectLedgerEntries(timeline) {
+  const sceneEvents = (timeline.events || []).filter((event) => event.surface === "scene");
+  const entries = [];
+  let sequence = 0;
+
+  for (let sceneIndex = 0; sceneIndex < sceneEvents.length; sceneIndex += 1) {
+    const sceneEvent = sceneEvents[sceneIndex];
+    for (const entry of sceneEvent.scene?.ledger || []) {
+      entries.push({
+        key: `activity:${sceneIndex}:${entry.id}`,
+        revealMs: sceneEvent.startMs + (entry.offsetMs || 0),
+        sceneIndex,
+        time: entry.time,
+        source: entry.source,
+        text: entry.text,
+        speaker: entry.speaker || "",
+        kind: entry.kind || "activity",
+        role: entry.role || "",
+        sequence: sequence++,
+      });
+    }
+  }
+
+  for (const event of (timeline.events || []).filter((item) => item.surface === "audio" && item.cue?.showInLedger === true)) {
+    const cue = event.cue || {};
+    entries.push({
+      key: `dialogue:${cue.output || sequence}`,
+      revealMs: event.startMs,
+      sceneIndex: event.sceneIndex,
+      time: cue.ledgerTime,
+      source: cue.ledgerSource,
+      text: cue.displayText || cue.text || "",
+      speaker: cue.line || cue.role || "",
+      kind: "dialogue",
+      role: cue.role || "",
+      avatar: cue.avatar || "",
+      audioOutput: cue.output || "",
+      sequence: sequence++,
+    });
+  }
+
+  return entries
+    .sort((left, right) => left.revealMs - right.revealMs || left.sequence - right.sequence)
+    .map(({ sequence: _sequence, ...entry }) => entry);
+}
+
 export function renderAttentionControlRoomHtml(timeline) {
   const timelineJson = safeScriptJson(timeline);
+  const ledgerEntriesJson = safeScriptJson(collectLedgerEntries(timeline));
   const title = escapeHtml(timeline.title || "Attention control");
 
   return `<!doctype html>
@@ -62,6 +109,10 @@ export function renderAttentionControlRoomHtml(timeline) {
       border: 1px solid rgba(135, 190, 221, 0.16);
       box-shadow: 0 40px 120px rgba(0, 0, 0, 0.58);
       isolation: isolate;
+    }
+
+    #stage[data-layout="ledger"] {
+      grid-template-rows: 44px minmax(0, 1fr) 132px 34px 7px;
     }
 
     #stage::before {
@@ -198,6 +249,11 @@ export function renderAttentionControlRoomHtml(timeline) {
     }
 
     #stage[data-layout="cutaway"] .room-grid {
+      display: none;
+    }
+
+    #stage[data-layout="ledger"] .room-grid,
+    #stage[data-layout="ledger"] .cutaway-view {
       display: none;
     }
 
@@ -359,6 +415,199 @@ export function renderAttentionControlRoomHtml(timeline) {
       font-weight: 620;
       line-height: 1.3;
       white-space: pre-wrap;
+    }
+
+    .ledger-view {
+      position: absolute;
+      inset: 16px;
+      display: none;
+      grid-template-rows: 44px minmax(0, 1fr);
+      overflow: hidden;
+      border: 1px solid rgba(135, 190, 221, 0.18);
+      border-radius: 18px;
+      background:
+        linear-gradient(rgba(56, 189, 248, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.025) 1px, transparent 1px),
+        radial-gradient(circle at 72% 16%, var(--accent-soft), transparent 34%),
+        linear-gradient(145deg, rgba(7, 22, 36, 0.98), rgba(2, 8, 15, 0.98));
+      background-size: 22px 22px, 22px 22px, auto, auto;
+      box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.34);
+    }
+
+    #stage[data-layout="ledger"] .ledger-view {
+      display: grid;
+    }
+
+    .ledger-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 18px;
+      padding: 0 16px;
+      border-bottom: 1px solid rgba(135, 190, 221, 0.13);
+      background: rgba(2, 8, 15, 0.62);
+    }
+
+    .ledger-heading {
+      min-width: 0;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .ledger-title {
+      color: #dff4ff;
+      font-size: 12px;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .ledger-focus {
+      overflow: hidden;
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 850;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ledger-workspaces {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 9px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .ledger-pods {
+      display: flex;
+      gap: 4px;
+    }
+
+    .ledger-pod {
+      width: 8px;
+      height: 8px;
+      border: 1px solid rgba(56, 189, 248, 0.34);
+      border-radius: 3px;
+      background: rgba(56, 189, 248, 0.06);
+    }
+
+    .ledger-pod.live {
+      border-color: rgba(56, 189, 248, 0.9);
+      background: rgba(56, 189, 248, 0.72);
+      box-shadow: 0 0 9px rgba(56, 189, 248, 0.62);
+    }
+
+    .ledger-reset {
+      padding-left: 8px;
+      border-left: 1px solid rgba(135, 190, 221, 0.18);
+      color: #70879a;
+    }
+
+    .ledger-stream {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      overflow: hidden;
+      padding: 11px 14px 13px;
+    }
+
+    .ledger-entry {
+      --source: #9edffb;
+      display: grid;
+      grid-template-columns: 48px 78px minmax(0, 1fr);
+      gap: 9px;
+      align-items: center;
+      min-height: 30px;
+      padding: 6px 10px;
+      border: 1px solid rgba(135, 190, 221, 0.1);
+      border-radius: 11px;
+      color: #c6d8e5;
+      background: rgba(3, 11, 19, 0.7);
+      opacity: 0.68;
+    }
+
+    .ledger-entry[data-source="slack"] { --source: var(--slack); }
+    .ledger-entry[data-source="github"],
+    .ledger-entry[data-source="ops"],
+    .ledger-entry[data-source="system"] { --source: var(--github); }
+    .ledger-entry[data-source="copilot"] { --source: var(--copilot); }
+    .ledger-entry[data-source="brain"] { --source: var(--brain); }
+    .ledger-entry[data-source="human"] { --source: #fb7185; }
+
+    .ledger-entry[data-kind="dialogue"] {
+      min-height: 43px;
+      padding-top: 8px;
+      padding-bottom: 8px;
+      border-color: color-mix(in srgb, var(--source) 32%, transparent);
+      background:
+        linear-gradient(90deg, color-mix(in srgb, var(--source) 10%, transparent), transparent 42%),
+        rgba(3, 11, 19, 0.86);
+      opacity: 0.82;
+    }
+
+    .ledger-entry.active {
+      min-height: 54px;
+      border-color: color-mix(in srgb, var(--source) 78%, transparent);
+      background:
+        linear-gradient(90deg, color-mix(in srgb, var(--source) 18%, transparent), transparent 52%),
+        rgba(5, 17, 28, 0.97);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--source) 14%, transparent), 0 13px 34px rgba(0, 0, 0, 0.32);
+      opacity: 1;
+      transform: scale(1.006);
+      transform-origin: center;
+    }
+
+    .ledger-time {
+      color: #8aa0b2;
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 10px;
+      font-weight: 850;
+    }
+
+    .ledger-source {
+      overflow: hidden;
+      padding: 4px 7px;
+      border: 1px solid color-mix(in srgb, var(--source) 40%, transparent);
+      border-radius: 999px;
+      color: var(--source);
+      font-size: 9px;
+      font-weight: 950;
+      letter-spacing: 0.07em;
+      text-align: center;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .ledger-copy {
+      min-width: 0;
+      line-height: 1.24;
+    }
+
+    .ledger-speaker {
+      margin-right: 7px;
+      color: var(--source);
+      font-size: 10px;
+      font-weight: 950;
+    }
+
+    .ledger-text {
+      color: #d8e7f1;
+      font-size: 12px;
+      font-weight: 640;
+      white-space: pre-wrap;
+    }
+
+    .ledger-entry.active .ledger-text {
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
     }
 
     .lane {
@@ -733,6 +982,10 @@ export function renderAttentionControlRoomHtml(timeline) {
       align-content: stretch;
     }
 
+    #stage[data-layout="ledger"] .metrics {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     .metric {
       min-width: 0;
       padding: 10px 11px;
@@ -891,10 +1144,10 @@ export function renderAttentionControlRoomHtml(timeline) {
 <body>
   <main id="stage" data-dailies-set="attention-control-room" data-camera="wide" aria-label="Attention control room">
     <header class="topbar">
-      <div class="eyebrow">Attention control room</div>
+      <div id="eyebrow" class="eyebrow">Attention control room</div>
       <div class="clock">
         <span id="clockTime" class="clock-time">08:05</span>
-        <span class="clock-window">one hour compressed</span>
+        <span id="clockWindow" class="clock-window">one hour compressed</span>
       </div>
       <div class="topbar-meta">
         <span id="globalReenactmentBadge" class="global-reenactment-badge">Acted reenactment - not a recording</span>
@@ -903,6 +1156,22 @@ export function renderAttentionControlRoomHtml(timeline) {
     </header>
 
     <section class="room" aria-label="Live work lanes">
+      <section class="ledger-view" aria-label="Chronological activity ledger">
+        <header class="ledger-header">
+          <div class="ledger-heading">
+            <div class="ledger-title">Chronological activity ledger</div>
+            <div id="ledgerFocusLabel" class="ledger-focus">Full stream</div>
+          </div>
+          <div class="ledger-workspaces">
+            <div id="ledgerPods" class="ledger-pods" aria-label="Open Copilot workspaces">
+              <span class="ledger-pod"></span><span class="ledger-pod"></span><span class="ledger-pod"></span><span class="ledger-pod"></span><span class="ledger-pod"></span>
+            </div>
+            <span><strong id="ledgerWorkspaceValue">0</strong> workspaces open</span>
+            <span class="ledger-reset">local session logs · reset 08:05</span>
+          </div>
+        </header>
+        <div id="ledgerStream" class="ledger-stream"></div>
+      </section>
       <section class="cutaway-view" aria-label="Source-backed acted interaction">
         <header class="cutaway-header">
           <div id="cutawayMark" class="cutaway-mark">AI</div>
@@ -951,14 +1220,22 @@ export function renderAttentionControlRoomHtml(timeline) {
   </div>
 
   <script id="dailies-timeline" type="application/json">${timelineJson}</script>
+  <script id="dailies-ledger" type="application/json">${ledgerEntriesJson}</script>
   <script>
     const timeline = JSON.parse(document.getElementById("dailies-timeline").textContent);
+    const ledgerEntries = JSON.parse(document.getElementById("dailies-ledger").textContent);
     const stage = document.getElementById("stage");
     const roomGrid = document.querySelector(".room-grid");
     const cutawayMark = document.getElementById("cutawayMark");
     const cutawaySource = document.getElementById("cutawaySource");
     const dialogueStream = document.getElementById("dialogueStream");
+    const ledgerFocusLabel = document.getElementById("ledgerFocusLabel");
+    const ledgerStream = document.getElementById("ledgerStream");
+    const ledgerWorkspaceValue = document.getElementById("ledgerWorkspaceValue");
+    const ledgerPods = [...document.querySelectorAll(".ledger-pod")];
+    const eyebrow = document.getElementById("eyebrow");
     const clockTime = document.getElementById("clockTime");
+    const clockWindow = document.getElementById("clockWindow");
     const sceneCount = document.getElementById("sceneCount");
     const globalReenactmentBadge = document.getElementById("globalReenactmentBadge");
     const foregroundLabel = document.getElementById("foregroundLabel");
@@ -1001,6 +1278,7 @@ export function renderAttentionControlRoomHtml(timeline) {
     let startedAtMs = 0;
     let currentMs = Number(params.get("t") || 0);
     let renderedDialogueKey = "";
+    let renderedLedgerKey = "";
 
     if (params.get("chrome") === "0") {
       controls.classList.add("hidden");
@@ -1067,8 +1345,32 @@ export function renderAttentionControlRoomHtml(timeline) {
       }
     }
 
-    function drawMetrics(scene) {
+    function formatCounter(value) {
+      return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(value));
+    }
+
+    function drawMetrics(scene, previousScene, sceneProgress) {
       metrics.textContent = "";
+      if (scene.layout === "ledger" && Array.isArray(scene.counters) && scene.counters.length > 0) {
+        const previousCounters = new Map((previousScene?.counters || []).map((counter) => [counter.id, Number(counter.value) || 0]));
+        for (const counter of scene.counters.slice(0, 3)) {
+          const endValue = Number(counter.value) || 0;
+          const startValue = previousCounters.get(counter.id) || 0;
+          const currentValue = startValue + (endValue - startValue) * sceneProgress;
+          const card = document.createElement("div");
+          card.className = "metric";
+          const value = document.createElement("div");
+          value.className = "metric-value";
+          value.textContent = formatCounter(currentValue);
+          const label = document.createElement("div");
+          label.className = "metric-label";
+          label.textContent = counter.label || "";
+          card.append(value, label);
+          metrics.appendChild(card);
+        }
+        return;
+      }
+
       const sceneMetrics = Array.isArray(scene.metrics) ? scene.metrics.slice(0, 4) : [];
       if (sceneMetrics.length === 0) {
         sceneMetrics.push(
@@ -1139,32 +1441,104 @@ export function renderAttentionControlRoomHtml(timeline) {
       dialogueStream.scrollTop = dialogueStream.scrollHeight;
     }
 
+    function ledgerSourceLabel(source) {
+      return {
+        slack: "Slack",
+        github: "GitHub",
+        ops: "Ops",
+        system: "System",
+        copilot: "Copilot",
+        brain: "Brain",
+        human: "Human"
+      }[source] || source || "Activity";
+    }
+
+    function drawLedger(sceneEvent, timeMs, audioEvent) {
+      const scene = sceneEvent.scene || {};
+      const visibleEntries = ledgerEntries.filter((entry) => entry.revealMs <= timeMs).slice(-11);
+      const activeOutput = audioEvent?.cue?.showInLedger === true ? audioEvent.cue.output : "";
+      const activeKey = activeOutput
+        ? visibleEntries.find((entry) => entry.audioOutput === activeOutput)?.key
+        : visibleEntries[visibleEntries.length - 1]?.key;
+      const ledgerKey = visibleEntries.map((entry) => entry.key).join("|") + ":" + (activeKey || "") + ":" + (scene.focus || "");
+
+      setText(ledgerFocusLabel, scene.focus ? "Zoom replay · " + (scene.sourceLabel || scene.headline) : "Full stream");
+      setText(ledgerWorkspaceValue, String(scene.concurrency || 0));
+      ledgerPods.forEach((pod, index) => pod.classList.toggle("live", index < Number(scene.concurrency || 0)));
+
+      if (ledgerKey === renderedLedgerKey) return;
+      renderedLedgerKey = ledgerKey;
+      ledgerStream.textContent = "";
+
+      for (const entry of visibleEntries) {
+        const row = document.createElement("article");
+        row.className = "ledger-entry";
+        row.dataset.source = entry.source || "system";
+        row.dataset.kind = entry.kind || "activity";
+        row.classList.toggle("active", entry.key === activeKey);
+
+        const time = document.createElement("div");
+        time.className = "ledger-time";
+        time.textContent = entry.time || "--:--";
+
+        const source = document.createElement("div");
+        source.className = "ledger-source";
+        source.textContent = ledgerSourceLabel(entry.source);
+
+        const copy = document.createElement("div");
+        copy.className = "ledger-copy";
+        if (entry.speaker) {
+          const speaker = document.createElement("span");
+          speaker.className = "ledger-speaker";
+          speaker.textContent = entry.speaker;
+          copy.appendChild(speaker);
+        }
+        const text = document.createElement("span");
+        text.className = "ledger-text";
+        text.textContent = String(entry.text || "").replaceAll("\\\\n", "\\n");
+        copy.appendChild(text);
+
+        row.append(time, source, copy);
+        ledgerStream.appendChild(row);
+      }
+
+      ledgerStream.scrollTop = ledgerStream.scrollHeight;
+    }
+
     function drawScene(sceneEvent, timeMs) {
       if (!sceneEvent) return;
       const scene = sceneEvent.scene || {};
       const sceneIndex = Math.max(0, sceneEvents.indexOf(sceneEvent));
-      const previousScene = sceneEvents[Math.max(0, sceneIndex - 1)]?.scene || scene;
+      const previousScene = sceneIndex > 0 ? sceneEvents[sceneIndex - 1]?.scene || null : null;
+      const previousLedgerScene = sceneEvents
+        .slice(0, sceneIndex)
+        .reverse()
+        .find((event) => event.scene?.layout === "ledger")?.scene || null;
       const lanes = new Map((scene.lanes || []).map((lane) => [lane.id, lane]));
       const concurrency = clamp(Number(scene.concurrency || 0), 0, 5);
       const audioEvent = currentAudioEvent(sceneEvent, timeMs);
       const transitionProgress = clamp((timeMs - sceneEvent.startMs) / 900, 0, 1);
       const easedProgress = 1 - Math.pow(1 - transitionProgress, 3);
-      const fromCamera = cameraFrames[previousScene.camera] || cameraFrames.wide;
+      const fromCamera = cameraFrames[previousScene?.camera || scene.camera] || cameraFrames.wide;
       const toCamera = cameraFrames[scene.camera] || cameraFrames.wide;
       const scale = fromCamera.scale + (toCamera.scale - fromCamera.scale) * easedProgress;
       const translateY = fromCamera.translateY + (toCamera.translateY - fromCamera.translateY) * easedProgress;
       const introProgress = clamp((timeMs - sceneEvent.startMs) / 480, 0, 1);
+      const sceneProgress = clamp((timeMs - sceneEvent.startMs) / Math.max(sceneEvent.durationMs, 1), 0, 1);
 
       stage.dataset.camera = scene.camera || "wide";
       stage.dataset.scene = scene.id || "";
       stage.dataset.layout = scene.layout || "control-room";
       stage.dataset.variant = scene.variant || "";
+      stage.dataset.focus = scene.focus || "";
       stage.style.setProperty("--accent", accentColors[scene.accent] || accentColors.human);
       stage.style.setProperty("--accent-soft", (accentColors[scene.accent] || accentColors.human) + "24");
       roomGrid.style.transform = "scale(" + scale.toFixed(4) + ") translateY(" + translateY.toFixed(2) + "px)";
       storyCopy.style.opacity = String(introProgress);
       storyCopy.style.transform = "translateY(" + ((1 - introProgress) * 7).toFixed(2) + "px)";
       setText(clockTime, scene.clock);
+      setText(clockWindow, scene.layout === "ledger" && scene.focus ? "zoom replay · stream continues" : "one hour compressed");
+      setText(eyebrow, scene.layout === "ledger" ? "Activity ledger" : "Attention control room");
       setText(sceneCount, String(sceneIndex + 1).padStart(2, "0") + " / " + String(sceneEvents.length).padStart(2, "0"));
       setText(foregroundLabel, scene.foreground?.label || "Human foreground");
       setText(foregroundAction, scene.foreground?.action || scene.headline);
@@ -1174,9 +1548,14 @@ export function renderAttentionControlRoomHtml(timeline) {
       setText(concurrencyValue, String(concurrency));
 
       if (scene.layout === "cutaway") {
+        renderedLedgerKey = "";
         drawCutaway(sceneEvent, timeMs, audioEvent);
+      } else if (scene.layout === "ledger") {
+        renderedDialogueKey = "";
+        drawLedger(sceneEvent, timeMs, audioEvent);
       } else {
         renderedDialogueKey = "";
+        renderedLedgerKey = "";
         for (const laneId of ${JSON.stringify(LANE_ORDER)}) {
           drawLane(laneId, lanes.get(laneId));
         }
@@ -1185,7 +1564,7 @@ export function renderAttentionControlRoomHtml(timeline) {
         });
       }
 
-      drawMetrics(scene);
+      drawMetrics(scene, scene.layout === "ledger" ? previousLedgerScene : previousScene, sceneProgress);
       const voiceLabel = audioEvent?.cue?.line || "";
       const voiceRole = audioEvent?.cue?.role || voiceLabel;
       setText(narrationRole, voiceLabel);
