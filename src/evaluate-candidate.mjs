@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readScenarioWithAudioCues } from "./audio-cues.mjs";
 import { resolveArtifactOutputPath } from "./compile-timeline.mjs";
+import { defaultPreviewPath } from "./render-preview.mjs";
 import { defaultRenderManifestPath, defaultVideoPath } from "./render-video.mjs";
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -13,6 +14,7 @@ const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 
 async function evaluateCandidate(source) {
   const { parsed, timeline, cues } = await readScenarioWithAudioCues(source);
   const videoPath = resolveArtifactOutputPath(parsed.frontmatter.video || defaultVideoPath(source));
+  const previewPath = resolveArtifactOutputPath(parsed.frontmatter.preview || defaultPreviewPath(source));
   const manifestPath = resolveArtifactOutputPath(parsed.frontmatter.renderManifest || defaultRenderManifestPath(source));
   const checks = [];
   const videoExists = await exists(videoPath);
@@ -20,10 +22,13 @@ async function evaluateCandidate(source) {
   const manifestExists = await exists(manifestPath);
   await check(checks, "render_manifest_exists", manifestExists, `render manifest exists at ${path.relative(PROJECT_ROOT, manifestPath)}`);
   const manifest = await readJsonIfExists(manifestPath);
+  await check(checks, "preview_artifact_exists", exists(previewPath), `preview exists at ${path.relative(PROJECT_ROOT, previewPath)}`);
+  await check(checks, "manifest_matches_current_preview", manifestMatchesPreview(manifest, previewPath), "render manifest matches the current preview");
   await check(checks, "manifest_matches_current_timeline", manifestMatchesTimeline(manifest, timeline), "render manifest matches the current compiled timeline");
   await check(checks, "manifest_matches_video", manifestMatchesVideo(manifest, videoPath), "render manifest video hash matches the MP4 artifact");
   await check(checks, "audio_fixtures_exist", Promise.all(cues.map((cue) => exists(cue.outputPath))).then((results) => results.every(Boolean)), "all declared audio cue files exist");
   await check(checks, "audio_fixtures_match_cue_text", audioFixturesMatchCueText(cues), "audio sidecar text matches current cue text");
+  await check(checks, "audio_cues_do_not_overlap", audioCuesDoNotOverlap(cues), "each narration cue finishes before the next cue begins");
   await check(checks, "manifest_matches_audio_cues", manifestMatchesAudioCues(manifest, cues), "render manifest audio cue hashes match current cues");
 
   const metadata = videoExists ? await ffprobeIfPossible(videoPath) : null;
@@ -34,6 +39,10 @@ async function evaluateCandidate(source) {
   await check(checks, "video_has_h264", videoStream?.codec_name === "h264", "video codec is H.264");
   await check(checks, "video_has_audio_stream", Boolean(audioStream), "video includes an audio stream");
   await check(checks, "video_covers_timeline", duration * 1000 >= timeline.durationMs, "video duration covers the compiled timeline");
+  if (parsed.frontmatter.maxDurationSeconds !== undefined) {
+    const maxDurationSeconds = Number(parsed.frontmatter.maxDurationSeconds);
+    await check(checks, "video_within_declared_limit", duration <= maxDurationSeconds, `video duration stays under ${maxDurationSeconds} seconds`);
+  }
   const sampledFrames = videoExists && metadata ? await sampleFramesIfPossible(videoPath, timeline) : [];
   await check(checks, "sampled_frames_exist", sampledFrames.length > 0 && Promise.all(sampledFrames.map((frame) => nonEmptyFile(frame.path))).then((results) => results.every(Boolean)), "candidate evaluation sampled non-empty video frames");
 
@@ -81,6 +90,10 @@ async function manifestMatchesTimeline(manifest, timeline) {
   return Boolean(manifest?.timelineSha256 && manifest.timelineSha256 === sha256Text(JSON.stringify(timeline)));
 }
 
+async function manifestMatchesPreview(manifest, previewPath) {
+  return Boolean(manifest?.previewSha256 && manifest.previewSha256 === await sha256File(previewPath));
+}
+
 async function manifestMatchesVideo(manifest, videoPath) {
   return Boolean(manifest?.videoSha256 && manifest.videoSha256 === await sha256File(videoPath));
 }
@@ -110,9 +123,23 @@ async function manifestMatchesAudioCues(manifest, cues) {
   return true;
 }
 
+async function audioCuesDoNotOverlap(cues) {
+  const ordered = [...cues].sort((left, right) => (left.event?.startMs || 0) - (right.event?.startMs || 0));
+  for (let index = 0; index < ordered.length - 1; index += 1) {
+    const cue = ordered[index];
+    const nextCue = ordered[index + 1];
+    const metadata = await ffprobe(cue.outputPath);
+    const durationMs = Number(metadata?.format?.duration || 0) * 1000;
+    if (!durationMs || (cue.event?.startMs || 0) + durationMs > (nextCue.event?.startMs || 0)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 async function sampleFrames(videoPath, timeline) {
   const base = path.basename(videoPath, ".mp4");
-  const frameDir = path.resolve(PROJECT_ROOT, "artifacts", "tsrs", "frames");
+  const frameDir = path.join(path.dirname(videoPath), "frames", base);
   await rm(frameDir, { recursive: true, force: true });
   await mkdir(frameDir, { recursive: true });
   const sampleSeconds = [0.25, 0.45, 0.82].map((ratio) => Math.max(1, Math.round(((timeline.durationMs || 1) / 1000) * ratio)));

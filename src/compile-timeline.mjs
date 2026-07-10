@@ -8,6 +8,7 @@ const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 
 export function compileTimeline(parsed) {
   let cursorMs = 0;
   const events = [];
+  let sceneIndex = 0;
 
   for (const block of parsed.blocks) {
     if (block.type === "editor") {
@@ -45,9 +46,22 @@ export function compileTimeline(parsed) {
         cue: block.data,
       });
     }
+
+    if (block.type === "scene") {
+      const scene = validateSceneData(block.data, sceneIndex);
+      events.push({
+        surface: "scene",
+        action: "show-scene",
+        startMs: cursorMs,
+        durationMs: scene.durationMs,
+        scene,
+      });
+      cursorMs += scene.durationMs;
+      sceneIndex += 1;
+    }
   }
 
-  return {
+  const timeline = {
     version: 1,
     sourcePath: path.relative(PROJECT_ROOT, parsed.sourcePath),
     title: parsed.frontmatter.title || firstHeading(parsed) || "Untitled demo",
@@ -56,6 +70,74 @@ export function compileTimeline(parsed) {
     durationMs: cursorMs,
     events,
     selfReview: parsed.blocks.find((block) => block.type === "self-review")?.data || null,
+  };
+
+  if (parsed.frontmatter.set) {
+    timeline.set = parsed.frontmatter.set;
+  }
+
+  if (parsed.frontmatter.maxDurationSeconds !== undefined) {
+    const maxDurationSeconds = Number(parsed.frontmatter.maxDurationSeconds);
+    if (!Number.isFinite(maxDurationSeconds) || maxDurationSeconds <= 0) {
+      throw new Error("maxDurationSeconds must be a positive number");
+    }
+    timeline.maxDurationSeconds = maxDurationSeconds;
+  }
+
+  return timeline;
+}
+
+export function validateSceneData(data, index = 0) {
+  if (!data || data.parseError) {
+    throw new Error(`scene ${index + 1} must contain valid JSON`);
+  }
+
+  const requiredStrings = ["id", "clock", "headline", "body"];
+  for (const key of requiredStrings) {
+    if (typeof data[key] !== "string" || !data[key].trim()) {
+      throw new Error(`scene ${index + 1} requires ${key}`);
+    }
+  }
+
+  if (!Number.isInteger(data.durationMs) || data.durationMs < 1000) {
+    throw new Error(`scene durationMs must be an integer of at least 1000`);
+  }
+
+  if (data.concurrency !== undefined && (!Number.isInteger(data.concurrency) || data.concurrency < 0 || data.concurrency > 5)) {
+    throw new Error(`scene ${index + 1} concurrency must be an integer from 0 to 5`);
+  }
+
+  if (data.lanes !== undefined && !Array.isArray(data.lanes)) {
+    throw new Error(`scene ${index + 1} lanes must be an array`);
+  }
+
+  for (const lane of data.lanes || []) {
+    if (!lane || typeof lane.id !== "string" || typeof lane.label !== "string") {
+      throw new Error(`scene ${index + 1} lanes require id and label`);
+    }
+    if (lane.items !== undefined && (!Array.isArray(lane.items) || lane.items.some((item) => typeof item !== "string"))) {
+      throw new Error(`scene ${index + 1} lane items must be strings`);
+    }
+  }
+
+  if (data.foreground !== undefined) {
+    if (!data.foreground || typeof data.foreground.label !== "string" || typeof data.foreground.action !== "string") {
+      throw new Error(`scene ${index + 1} foreground requires label and action`);
+    }
+  }
+
+  return {
+    kicker: "",
+    camera: "wide",
+    accent: "human",
+    concurrency: 0,
+    foreground: {
+      label: "Human foreground",
+      action: data.headline,
+    },
+    lanes: [],
+    metrics: [],
+    ...data,
   };
 }
 

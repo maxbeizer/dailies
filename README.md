@@ -21,9 +21,11 @@ Current Relay demos:
 - `demos/tsrs/line-voices.demo.md`: Line identity moves from text labels into distinct Kokoro voice ids.
 - `demos/tsrs/provider-boundary.demo.md`: Kokoro is configured through the provider boundary while TSRS still owns playback.
 
+
 ## Commands
 
 ```sh
+npm test
 npm run compile:demo -- demos/tsrs/queue.demo.md
 npm run generate:audio -- demos/tsrs/queue.demo.md --provider say
 npm run render:preview -- demos/tsrs/queue.demo.md
@@ -39,11 +41,54 @@ npm run render:candidate -- demos/tsrs/line-voices.demo.md --provider kokoro
 npm run render:candidate -- demos/tsrs/provider-boundary.demo.md --provider kokoro
 ```
 
-The default check is intentionally offline and dependency-free. It parses each scenario under `demos/`, compiles a timeline JSON artifact, renders a self-contained HTML preview, and evaluates each scenario against the first self-review gates. `render:video` is opt-in because it depends on local ZShot availability.
+The default check is intentionally offline and dependency-free. It parses each scenario under `demos/`, compiles a timeline JSON artifact, renders a self-contained HTML preview, and evaluates each scenario against the first self-review gates. `render:video` is opt-in because it needs either local ZShot or Google Chrome plus ffmpeg.
 
 `render:candidate` is the full local candidate loop: compile, preview, evaluate the demo source, generate audio fixtures, render MP4, and run the candidate gate.
 
 Terminal command output appears instantly once a command finishes; only user-authored editor text and terminal commands are typed out.
+
+## Sets and scenes
+
+The default set remains the original editor plus terminal stage. A scenario can select another built-in set with frontmatter:
+
+```yaml
+set: attention-control-room
+maxDurationSeconds: 120
+```
+
+The attention control room consumes explicit JSON scene blocks. Put each narration cue immediately before its scene so they share a start time:
+
+````markdown
+```dailies:audio-cue
+line: Narrator
+text: Five workspaces are active at once.
+output: artifacts/scenes/audio/five-workspaces.mp3
+mode: declared-fixture
+```
+
+```dailies:scene
+{
+  "id": "five-workspaces",
+  "durationMs": 10000,
+  "clock": "08:19",
+  "headline": "Five workspaces overlap.",
+  "body": "The foreground moves while bounded agents continue in parallel."
+}
+```
+````
+
+Scene data is validated before compilation. The control-room renderer supports `kicker`, `camera`, `accent`, `concurrency`, `foreground`, `lanes`, and `metrics` in addition to the required fields above.
+
+## Video renderers
+
+`render:video` uses `DAILIES_RENDERER=auto` by default. Auto tries ZShot first and falls back to dependency-free Chrome DevTools capture when ZShot is missing or unavailable.
+
+```sh
+DAILIES_RENDERER=zshot npm run render:video -- demos/tsrs/queue.demo.md
+```
+
+Set `CHROME_PATH` when Chrome is not installed at the standard macOS application path. `DAILIES_CHROME_FPS` controls the Chrome capture rate before ffmpeg produces the 30 fps H.264 output; the default is 12 fps for mostly static Dailies sets.
+
 
 Generated artifacts for each demo follow the scenario frontmatter. The first two demos write:
 
@@ -59,7 +104,7 @@ Generated artifacts for each demo follow the scenario frontmatter. The first two
 - `artifacts/tsrs/prune-before-ready.preview.html`
 - `artifacts/tsrs/prune-before-ready.evaluation.json`
 - `artifacts/tsrs/prune-before-ready.mp4` when `npm run render:video` succeeds
-- `artifacts/tsrs/frames/*.webp` compact candidate-review frame samples
+- `artifacts/<demo-group>/frames/<demo>/*.webp` compact candidate-review frame samples
 
 Use `--provider kokoro` with `generate:audio` when real local Kokoro fixture generation is intended and the optional TSRS Kokoro venv is already installed. Set `TSRS_KOKORO_HELPER` to the non-speaking TSRS wrapper path when the sibling `../tri-state-relay-service/scripts/kokoro-voice-command` helper is not available. Use `--provider speechify` only when real Speechify fixture generation is intended and local credentials are already configured. Set `TSRS_SPEECHIFY_HELPER` to the non-speaking TSRS wrapper path, or put a compatible `speechify` command on `PATH`. The default development path can use the local macOS `say` voice so the video has an audio cue without touching a paid/network provider.
 

@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { resolveArtifactOutputPath } from "./compile-timeline.mjs";
 import { renderPreview } from "./render-preview.mjs";
 import { readScenarioWithAudioCues } from "./audio-cues.mjs";
+import { renderWithChrome } from "./render-with-chrome.mjs";
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_ZSHOT_PATH = path.join(process.env.HOME || "", "Library/Application Support/ZShot/zshot");
@@ -47,25 +48,12 @@ async function renderVideo(source) {
   try {
     const relativePreviewPath = path.relative(PROJECT_ROOT, previewPath).split(path.sep).map(encodeURIComponent).join("/");
     const previewUrl = `${server.url}/${relativePreviewPath}?autoplay=1&chrome=0`;
-    await run(zshotPath, [
-      "-t",
-      "mp4",
-      "-f",
-      capturePath,
-      "--video-width",
-      "1280",
-      "--video-height",
-      "720",
-      "--video-selector",
-      "#stage",
-      "--video-framerate",
-      "30",
-      "--video-duration",
-      durationSeconds,
-      "--process-timeout",
-      String(Number(durationSeconds) + 30),
+    await renderVisuals({
+      zshotPath,
       previewUrl,
-    ]);
+      capturePath,
+      durationSeconds: Number(durationSeconds),
+    });
   } finally {
     await server.close();
   }
@@ -85,6 +73,56 @@ async function renderVideo(source) {
   });
 
   return outputPath;
+}
+
+async function renderVisuals(options) {
+  const renderer = process.env.DAILIES_RENDERER || "auto";
+  if (!["auto", "zshot", "chrome"].includes(renderer)) {
+    throw new Error("DAILIES_RENDERER must be auto, zshot, or chrome");
+  }
+
+  if (renderer === "chrome") {
+    await renderWithChrome({
+      url: options.previewUrl.replace("autoplay=1", "autoplay=0"),
+      outputPath: options.capturePath,
+      durationSeconds: options.durationSeconds,
+      width: 1280,
+      height: 720,
+    });
+    return;
+  }
+
+  try {
+    await run(options.zshotPath, [
+      "-t",
+      "mp4",
+      "-f",
+      options.capturePath,
+      "--video-width",
+      "1280",
+      "--video-height",
+      "720",
+      "--video-selector",
+      "#stage",
+      "--video-framerate",
+      "30",
+      "--video-duration",
+      String(options.durationSeconds),
+      "--process-timeout",
+      String(options.durationSeconds + 30),
+      options.previewUrl,
+    ]);
+  } catch (error) {
+    if (renderer === "zshot") throw error;
+    console.warn(`ZShot render failed; using local Chrome capture: ${error.message}`);
+    await renderWithChrome({
+      url: options.previewUrl.replace("autoplay=1", "autoplay=0"),
+      outputPath: options.capturePath,
+      durationSeconds: options.durationSeconds,
+      width: 1280,
+      height: 720,
+    });
+  }
 }
 
 async function writeRenderManifest(manifestPath, data) {
@@ -133,7 +171,7 @@ async function renderDurationSeconds(timeline, cues) {
   let durationMs = timeline.durationMs || 1;
   for (const cue of cues) {
     const audioDurationMs = Math.ceil((await mediaDurationSeconds(cue.outputPath)) * 1000);
-    const cueStartMs = cue.event?.startMs || timeline.durationMs || 0;
+    const cueStartMs = cue.event?.startMs ?? timeline.durationMs ?? 0;
     durationMs = Math.max(durationMs, cueStartMs + audioDurationMs + 900);
   }
   return Math.ceil(durationMs / 1000);
@@ -261,6 +299,7 @@ function contentType(filePath) {
   if (filePath.endsWith(".js")) return "text/javascript; charset=utf-8";
   if (filePath.endsWith(".css")) return "text/css; charset=utf-8";
   if (filePath.endsWith(".png")) return "image/png";
+  if (filePath.endsWith(".webp")) return "image/webp";
   if (filePath.endsWith(".mp4")) return "video/mp4";
   return "application/octet-stream";
 }

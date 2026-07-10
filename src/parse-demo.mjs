@@ -83,7 +83,7 @@ function normalizeFenceType(info) {
 
 function parseBlockData(type, content) {
   if (type === "audio-cue") return parseKeyValueBlock(content);
-  if (type === "self-review") return parseJsonBlock(content);
+  if (type === "scene" || type === "self-review") return parseJsonBlock(content);
   return null;
 }
 

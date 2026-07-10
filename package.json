@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "node --test",
     "compile:demo": "node src/compile-timeline.mjs",
     "generate:audio": "node src/generate-audio-fixtures.mjs",
     "render:preview": "node src/render-preview.mjs",

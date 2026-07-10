@@ -30,6 +30,7 @@ Tooling: Plain JavaScript/HTML first; optional ffmpeg for MP4 conversion; TSRS/S
 Current commands:
 
 ```sh
+npm test
 npm run compile:demo -- demos/tsrs/queue.demo.md
 npm run generate:audio -- demos/tsrs/queue.demo.md --provider say
 npm run render:preview -- demos/tsrs/queue.demo.md
@@ -45,7 +46,7 @@ npm run render:candidate -- demos/tsrs/line-voices.demo.md --provider kokoro
 npm run render:candidate -- demos/tsrs/provider-boundary.demo.md --provider kokoro
 ```
 
-There are no third-party npm dependencies yet. Do not run `npm install` unless package manifests change or validation fails because an existing dependency is missing. `npm run check` discovers every `demos/**/*.demo.md` scenario and runs the offline preview/evaluation gate for each one. `render:video` uses the local ZShot CLI when available and is intentionally outside the default offline gate. `generate:audio --provider say` uses local macOS speech plus ffmpeg conversion; `--provider kokoro` uses the optional local TSRS Kokoro helper when its venv is installed; `--provider speechify` is opt-in because it is networked, credentialed, and potentially paid. `render:candidate` runs the complete local candidate loop.
+There are no third-party npm dependencies yet. Do not run `npm install` unless package manifests change or validation fails because an existing dependency is missing. `npm run check` discovers every `demos/**/*.demo.md` scenario and runs the offline preview/evaluation gate for each one. `render:video` tries the local ZShot CLI and falls back to dependency-free Chrome DevTools capture when ZShot is unavailable; set `DAILIES_RENDERER=chrome` to choose the fallback directly. `generate:audio --provider say` uses local macOS speech plus ffmpeg conversion; `--provider kokoro` uses the optional local TSRS Kokoro helper when its venv is installed; `--provider speechify` is opt-in because it is networked, credentialed, and potentially paid. `render:candidate` runs the complete local candidate loop.
 
 ## ZShot Visual Harness
 
@@ -76,9 +77,12 @@ Keep the core workflow anchored:
 Initial source layout:
 
 - `demos/`: source scenarios and fixture declarations.
+- `assets/`: optional committed visual assets used by named sets.
 - `src/`: dependency-free parser, compiler, and evaluator modules.
 - `scripts/`: thin command wrappers for repeatable agent use.
 - `artifacts/`: ignored generated timelines, evaluation reports, audio, frames, and videos.
+
+Named sets are selected with the scenario `set` frontmatter key. The `attention-control-room` set uses validated `dailies:scene` JSON blocks and keeps its playback state separate from the legacy editor/terminal renderer.
 
 TSRS audio boundary:
 

@@ -2,7 +2,7 @@ import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseDemoMarkdown } from "./parse-demo.mjs";
-import { compileTimeline, defaultTimelinePath, resolveArtifactOutputPath } from "./compile-timeline.mjs";
+import { compileTimeline, defaultTimelinePath, resolveArtifactOutputPath, validateSceneData } from "./compile-timeline.mjs";
 import { defaultPreviewPath } from "./render-preview.mjs";
 import { renderState } from "./render-state.mjs";
 
@@ -14,9 +14,14 @@ const SECRET_PATTERNS = [
   { name: "slack_token", pattern: /\bxox[baprs]-[A-Za-z0-9-]{20,}\b/ },
   { name: "aws_access_key", pattern: /\bAKIA[0-9A-Z]{16}\b/ },
   { name: "private_home_path", pattern: /\/Users\/[A-Za-z0-9._-]+/ },
+  { name: "brain_local_reference", pattern: /(?:~\/Brain|\/Brain(?:\/|$)|Daily Projects\/|Weekly Notes\/|Meeting Notes\/|Projects\/)/ },
+  { name: "brain_wikilink", pattern: /\[\[[^\]]+\]\]/ },
+  { name: "brain_uid", pattern: /\buid:\s*[a-z0-9]{6,}\b/i },
+  { name: "session_uuid", pattern: /\b[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\b/i },
 ];
 
 const ALLOWED_COMMANDS = new Set(["relay"]);
+const ATTENTION_CONTROL_ROOM_SET = "attention-control-room";
 
 export async function evaluateDemo(sourcePath) {
   const absoluteSourcePath = path.resolve(sourcePath);
@@ -27,25 +32,36 @@ export async function evaluateDemo(sourcePath) {
   const reportPath = resolveArtifactOutputPath(parsed.frontmatter.evaluation || defaultEvaluationPath(absoluteSourcePath));
   const expectedTimeline = compileTimeline(parsed);
   const checks = [];
+  const set = parsed.frontmatter.set || "editor-terminal";
+  const maxDurationSeconds = Number(parsed.frontmatter.maxDurationSeconds || (set === ATTENTION_CONTROL_ROOM_SET ? 120 : 25));
 
-  check(checks, "editor_surface_present", parsed.blocks.some((block) => block.type === "editor"), "scenario has a dailies:editor block");
-  check(checks, "terminal_surface_present", parsed.blocks.some((block) => block.type === "terminal"), "scenario has a dailies:terminal block");
+  if (set === ATTENTION_CONTROL_ROOM_SET) {
+    check(checks, "attention_control_room_set", expectedTimeline.set === ATTENTION_CONTROL_ROOM_SET, "timeline selects the attention control room set");
+    check(checks, "scene_blocks_present", parsed.blocks.filter((block) => block.type === "scene").length >= 8, "scenario has at least eight dailies:scene blocks");
+    check(checks, "scene_blocks_valid", sceneBlocksValid(parsed), "scene blocks contain valid, renderable JSON");
+    check(checks, "scene_narration_aligned", sceneNarrationAligned(expectedTimeline), "each scene begins with one narration cue");
+    check(checks, "timeline_within_declared_limit", expectedTimeline.durationMs <= maxDurationSeconds * 1000, `compiled timeline stays under ${maxDurationSeconds} seconds`);
+  } else {
+    check(checks, "editor_surface_present", parsed.blocks.some((block) => block.type === "editor"), "scenario has a dailies:editor block");
+    check(checks, "terminal_surface_present", parsed.blocks.some((block) => block.type === "terminal"), "scenario has a dailies:terminal block");
+    check(checks, "timeline_under_25_seconds", expectedTimeline.durationMs <= 25000, "compiled timeline stays under 25 seconds");
+    check(checks, "terminal_outputs_instant", terminalOutputsInstant(expectedTimeline), "terminal output events render fully as soon as they start");
+    check(checks, "audio_cues_do_not_linger", audioCuesDoNotLinger(expectedTimeline), "audio cue overlays disappear after the active cue window");
+  }
+
   check(checks, "self_review_present", parsed.blocks.some((block) => block.type === "self-review"), "scenario declares self-review criteria");
   check(checks, "self_review_json_valid", selfReviewJsonValid(parsed), "self-review block contains valid JSON");
   check(checks, "fixture_only_execution", parsed.frontmatter.executionMode === "fixture-only" && !/\bexec\s*:\s*true\b/i.test(markdown), "scenario is fixture-only and does not request live execution");
   check(checks, "relay_commands_only", relayCommandsOnly(parsed), "terminal command lines use the relay allowlist");
-  check(checks, "timeline_under_25_seconds", expectedTimeline.durationMs <= 25000, "compiled timeline stays under 25 seconds");
-  check(checks, "terminal_outputs_instant", terminalOutputsInstant(expectedTimeline), "terminal output events render fully as soon as they start");
-  check(checks, "audio_cues_do_not_linger", audioCuesDoNotLinger(expectedTimeline), "audio cue overlays disappear after the active cue window");
   check(checks, "audio_cues_declared", audioCuesDeclared(parsed), "audio cue blocks declare line, text, output, and non-live mode");
   check(checks, "no_obvious_secrets_or_private_paths", noSecretPatterns(markdown), "scenario text does not match obvious secret or private-path patterns");
   check(checks, "timeline_artifact_exists", await exists(timelinePath), `timeline artifact exists at ${path.relative(PROJECT_ROOT, timelinePath)}`);
   check(checks, "timeline_has_events", await timelineHasEvents(timelinePath), "timeline artifact contains events");
   check(checks, "timeline_has_no_private_paths", await timelineHasNoPrivatePaths(timelinePath), "timeline artifact does not expose local private paths");
   check(checks, "timeline_matches_scenario", await timelineMatchesScenario(timelinePath, expectedTimeline), "timeline artifact matches the current scenario");
-  check(checks, "timeline_has_expected_surfaces", await timelineHasExpectedSurfaces(timelinePath), "timeline artifact includes editor and terminal events");
+  check(checks, "timeline_has_expected_surfaces", await timelineHasExpectedSurfaces(timelinePath, set), `timeline artifact includes the expected ${set} surfaces`);
   check(checks, "preview_artifact_exists", await exists(previewPath), `preview artifact exists at ${path.relative(PROJECT_ROOT, previewPath)}`);
-  check(checks, "preview_has_expected_surfaces", await previewHasExpectedSurfaces(previewPath), "preview artifact includes editor and terminal surfaces");
+  check(checks, "preview_has_expected_surfaces", await previewHasExpectedSurfaces(previewPath, set), `preview artifact includes the expected ${set} set marker`);
   check(checks, "preview_has_no_private_paths", await textArtifactHasNoPrivatePaths(previewPath), "preview artifact does not expose local private paths");
 
   const selfReview = parsed.blocks.find((block) => block.type === "self-review")?.data;
@@ -81,6 +97,27 @@ function check(checks, name, passed, detail) {
 function selfReviewJsonValid(parsed) {
   const block = parsed.blocks.find((item) => item.type === "self-review");
   return Boolean(block?.data && !block.data.parseError && Array.isArray(block.data.checks));
+}
+
+function sceneBlocksValid(parsed) {
+  const scenes = parsed.blocks.filter((block) => block.type === "scene");
+  try {
+    scenes.forEach((block, index) => validateSceneData(block.data, index));
+    return scenes.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+function sceneNarrationAligned(timeline) {
+  const audioStarts = new Map();
+  for (const event of timeline.events || []) {
+    if (event.surface !== "audio") continue;
+    audioStarts.set(event.startMs, (audioStarts.get(event.startMs) || 0) + 1);
+  }
+
+  const scenes = (timeline.events || []).filter((event) => event.surface === "scene");
+  return scenes.length > 0 && scenes.every((scene) => audioStarts.get(scene.startMs) === 1);
 }
 
 function relayCommandsOnly(parsed) {
@@ -151,11 +188,14 @@ async function timelineMatchesScenario(timelinePath, expectedTimeline) {
   }
 }
 
-async function timelineHasExpectedSurfaces(timelinePath) {
+async function timelineHasExpectedSurfaces(timelinePath, set) {
   try {
     const raw = await readFile(timelinePath, "utf8");
     const timeline = JSON.parse(raw);
     const surfaces = new Set((timeline.events || []).map((event) => event.surface));
+    if (set === ATTENTION_CONTROL_ROOM_SET) {
+      return timeline.set === ATTENTION_CONTROL_ROOM_SET && surfaces.has("scene") && surfaces.has("audio");
+    }
     return surfaces.has("editor") && surfaces.has("terminal");
   } catch {
     return false;
@@ -166,9 +206,17 @@ async function timelineHasNoPrivatePaths(timelinePath) {
   return textArtifactHasNoPrivatePaths(timelinePath);
 }
 
-async function previewHasExpectedSurfaces(previewPath) {
+async function previewHasExpectedSurfaces(previewPath, set) {
   try {
     const raw = await readFile(previewPath, "utf8");
+    if (set === ATTENTION_CONTROL_ROOM_SET) {
+      return raw.includes('data-dailies-preview="true"')
+        && raw.includes('data-dailies-set="attention-control-room"')
+        && raw.includes('data-lane-id="copilot"')
+        && raw.includes('data-lane-id="brain"')
+        && raw.includes('data-lane-id="github"')
+        && raw.includes('data-lane-id="slack"');
+    }
     return raw.includes('data-dailies-preview="true"')
       && raw.includes('data-surface="editor"')
       && raw.includes('data-surface="terminal"')
