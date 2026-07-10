@@ -82,7 +82,7 @@ Initial source layout:
 - `scripts/`: thin command wrappers for repeatable agent use.
 - `artifacts/`: ignored generated timelines, evaluation reports, audio, frames, and videos.
 
-Named sets are selected with the scenario `set` frontmatter key. The `attention-control-room` set uses validated `dailies:scene` JSON blocks and keeps its playback state separate from the legacy editor/terminal renderer.
+Named sets are selected with the scenario `set` frontmatter key. The `attention-control-room` set uses validated `dailies:scene` JSON blocks and keeps its playback state separate from the legacy editor/terminal renderer. Multiple `dailies:audio-cue` blocks may precede one scene; their nonnegative `offsetMs` values are relative to that following scene, and compilation must fail rather than let a cue migrate into a later scene.
 
 TSRS audio boundary:
 
@@ -91,6 +91,7 @@ TSRS audio boundary:
 - The wrapper writes an audio file and never speaks directly. That makes it suitable for fixture generation, not live demo playback.
 - Configure Kokoro through `TSRS_KOKORO_HELPER` or the sibling TSRS helper path; do not hard-code user-local absolute helper paths in source or artifacts.
 - Configure Speechify through `TSRS_SPEECHIFY_HELPER` or a compatible `speechify` command on `PATH`; do not hard-code user-local absolute helper paths in source or artifacts.
+- Use `audioProvider` frontmatter when a scenario depends on provider-specific voices or speed. Reject conflicting CLI providers, and keep ignored fixture sidecars tied to cue text, provider, voice, and speed.
 - Keep real Speechify generation opt-in because it is networked, credentialed, and potentially paid. The default evaluator must work offline.
 - Never store API keys, provider secrets, raw private Relay queue content, or generated provider metadata in this repo.
 
@@ -115,9 +116,9 @@ Relay command boundary:
 A demo candidate is not ready for human feedback just because it rendered. The agent should first verify:
 
 1. Scenario source parses without warnings.
-2. Timeline artifact exists and contains editor and terminal events.
+2. Timeline artifact exists and contains the surfaces required by the selected set.
 3. Terminal commands are fixture-only and match the scenario.
-4. Audio cues are declared without requiring live speech or network synthesis by default.
+4. Audio cues are declared without requiring live speech or network synthesis by default, and generated fixtures match current cue text, provider, voice, and speed.
 5. Secret/private-path scans pass across editor text, terminal text, captions, and audio cue text.
 6. Generated artifacts listed by the scenario exist, except outputs intentionally deferred by the current slice.
 7. Preview HTML exists, contains both surfaces, and does not expose private local paths.

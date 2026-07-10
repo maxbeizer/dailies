@@ -133,10 +133,34 @@ export function renderAttentionControlRoomHtml(timeline) {
     }
 
     .scene-count {
-      justify-self: end;
       color: var(--muted);
       font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
       font-size: 12px;
+    }
+
+    .topbar-meta {
+      justify-self: end;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .global-reenactment-badge {
+      display: none;
+      padding: 4px 7px;
+      border: 1px solid rgba(247, 217, 141, 0.28);
+      border-radius: 999px;
+      color: #f7d98d;
+      background: rgba(247, 217, 141, 0.07);
+      font-size: 8px;
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .global-reenactment-badge.visible {
+      display: inline-flex;
     }
 
     .room {
@@ -171,6 +195,170 @@ export function renderAttentionControlRoomHtml(timeline) {
       gap: 14px 38px;
       transform-origin: center;
       transform: scale(1) translateY(0);
+    }
+
+    #stage[data-layout="cutaway"] .room-grid {
+      display: none;
+    }
+
+    #stage[data-layout="control-room"] .cutaway-view {
+      display: none;
+    }
+
+    .cutaway-view {
+      position: absolute;
+      inset: 16px;
+      display: grid;
+      grid-template-rows: 46px minmax(0, 1fr);
+      overflow: hidden;
+      border: 1px solid rgba(135, 190, 221, 0.18);
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 82% 18%, var(--accent-soft), transparent 34%),
+        linear-gradient(145deg, rgba(8, 25, 40, 0.98), rgba(2, 8, 15, 0.98));
+      box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.34);
+    }
+
+    #stage[data-variant="slack"] .cutaway-view {
+      background:
+        radial-gradient(circle at 12% 86%, rgba(244, 114, 182, 0.13), transparent 34%),
+        linear-gradient(145deg, #22162a, #090a13 68%);
+    }
+
+    #stage[data-variant="deployment"] .cutaway-view {
+      background:
+        linear-gradient(rgba(52, 211, 153, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(52, 211, 153, 0.035) 1px, transparent 1px),
+        linear-gradient(145deg, #061b17, #030a0c 72%);
+      background-size: 24px 24px, 24px 24px, auto;
+    }
+
+    .cutaway-header {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 0 16px;
+      border-bottom: 1px solid rgba(135, 190, 221, 0.13);
+      background: rgba(2, 8, 15, 0.54);
+    }
+
+    .cutaway-mark {
+      width: 27px;
+      height: 27px;
+      display: grid;
+      place-items: center;
+      border: 1px solid color-mix(in srgb, var(--accent) 48%, transparent);
+      border-radius: 8px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .cutaway-source {
+      min-width: 0;
+      overflow: hidden;
+      color: #cce1ee;
+      font-size: 12px;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .reenactment-badge {
+      color: #f7d98d;
+      font-size: 9px;
+      font-weight: 950;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .dialogue-stream {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+      padding: 13px 18px 15px;
+    }
+
+    .dialogue-message {
+      --speaker: #9edffb;
+      width: min(82%, 820px);
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 9px 12px;
+      border: 1px solid color-mix(in srgb, var(--speaker) 34%, transparent);
+      border-radius: 14px;
+      color: #dceaf4;
+      background: rgba(4, 13, 22, 0.9);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+      opacity: 0.74;
+    }
+
+    .dialogue-message.active {
+      border-color: color-mix(in srgb, var(--speaker) 72%, transparent);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--speaker) 14%, transparent), 0 14px 36px rgba(0, 0, 0, 0.28);
+      opacity: 1;
+    }
+
+    .dialogue-message[data-role="operator"] {
+      --speaker: #fb7185;
+      align-self: flex-end;
+      grid-template-columns: minmax(0, 1fr) 34px;
+    }
+
+    .dialogue-message[data-role="operator"] .dialogue-avatar {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .dialogue-message[data-role="operator"] .dialogue-copy {
+      grid-column: 1;
+      grid-row: 1;
+      text-align: right;
+    }
+
+    .dialogue-message[data-role="collaborator"] { --speaker: #f59e0b; }
+    .dialogue-message[data-role="copilot"] { --speaker: #38bdf8; }
+    .dialogue-message[data-role="system"] { --speaker: #34d399; }
+    .dialogue-message[data-role="control-room"] { --speaker: #fbbf24; }
+    .dialogue-message[data-role="narrator"] { --speaker: #c4b5fd; }
+
+    .dialogue-avatar {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border: 1px solid color-mix(in srgb, var(--speaker) 58%, transparent);
+      border-radius: 10px;
+      color: var(--speaker);
+      background: color-mix(in srgb, var(--speaker) 12%, #07111d);
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 9px;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    .dialogue-speaker {
+      margin-bottom: 4px;
+      color: var(--speaker);
+      font-size: 10px;
+      font-weight: 950;
+      letter-spacing: 0.06em;
+    }
+
+    .dialogue-text {
+      color: #e7f1f7;
+      font-size: 13px;
+      font-weight: 620;
+      line-height: 1.3;
+      white-space: pre-wrap;
     }
 
     .lane {
@@ -612,6 +800,18 @@ export function renderAttentionControlRoomHtml(timeline) {
       color: #fbbf24;
     }
 
+    .narration[data-voice-role="collaborator"] .narration-role {
+      color: #f59e0b;
+    }
+
+    .narration[data-voice-role="copilot"] .narration-role {
+      color: #38bdf8;
+    }
+
+    .narration[data-voice-role="system"] .narration-role {
+      color: #34d399;
+    }
+
     .narration-text {
       min-width: 0;
     }
@@ -696,10 +896,21 @@ export function renderAttentionControlRoomHtml(timeline) {
         <span id="clockTime" class="clock-time">08:05</span>
         <span class="clock-window">one hour compressed</span>
       </div>
-      <div id="sceneCount" class="scene-count">01 / 01</div>
+      <div class="topbar-meta">
+        <span id="globalReenactmentBadge" class="global-reenactment-badge">Acted reenactment - not a recording</span>
+        <span id="sceneCount" class="scene-count">01 / 01</span>
+      </div>
     </header>
 
     <section class="room" aria-label="Live work lanes">
+      <section class="cutaway-view" aria-label="Source-backed acted interaction">
+        <header class="cutaway-header">
+          <div id="cutawayMark" class="cutaway-mark">AI</div>
+          <div id="cutawaySource" class="cutaway-source"></div>
+          <div class="reenactment-badge">Source-backed reenactment - acted, not a recording</div>
+        </header>
+        <div id="dialogueStream" class="dialogue-stream"></div>
+      </section>
       <div class="room-grid">
         ${LANE_ORDER.map((laneId) => laneMarkup(laneId)).join("")}
         <section class="mission-core" aria-label="Human foreground">
@@ -744,8 +955,12 @@ export function renderAttentionControlRoomHtml(timeline) {
     const timeline = JSON.parse(document.getElementById("dailies-timeline").textContent);
     const stage = document.getElementById("stage");
     const roomGrid = document.querySelector(".room-grid");
+    const cutawayMark = document.getElementById("cutawayMark");
+    const cutawaySource = document.getElementById("cutawaySource");
+    const dialogueStream = document.getElementById("dialogueStream");
     const clockTime = document.getElementById("clockTime");
     const sceneCount = document.getElementById("sceneCount");
+    const globalReenactmentBadge = document.getElementById("globalReenactmentBadge");
     const foregroundLabel = document.getElementById("foregroundLabel");
     const foregroundAction = document.getElementById("foregroundAction");
     const storyCopy = document.getElementById("storyCopy");
@@ -785,10 +1000,12 @@ export function renderAttentionControlRoomHtml(timeline) {
     let startTimestamp = 0;
     let startedAtMs = 0;
     let currentMs = Number(params.get("t") || 0);
+    let renderedDialogueKey = "";
 
     if (params.get("chrome") === "0") {
       controls.classList.add("hidden");
     }
+    globalReenactmentBadge.classList.toggle("visible", sceneEvents.some((event) => event.scene?.reenactment === true));
 
     function clamp(value, min, max) {
       return Math.max(min, Math.min(max, value));
@@ -803,9 +1020,22 @@ export function renderAttentionControlRoomHtml(timeline) {
       return current;
     }
 
-    function currentAudioEvent(sceneEvent) {
+    function audioEventsForScene(sceneEvent) {
       if (!sceneEvent) return null;
-      return audioEvents.find((event) => event.startMs === sceneEvent.startMs) || null;
+      const sceneEndMs = sceneEvent.startMs + sceneEvent.durationMs;
+      return audioEvents
+        .filter((event) => event.startMs >= sceneEvent.startMs && event.startMs < sceneEndMs)
+        .sort((left, right) => left.startMs - right.startMs);
+    }
+
+    function currentAudioEvent(sceneEvent, timeMs) {
+      const sceneAudio = audioEventsForScene(sceneEvent) || [];
+      let current = sceneAudio[0] || null;
+      for (const event of sceneAudio) {
+        if (event.startMs <= timeMs) current = event;
+        if (event.startMs > timeMs) break;
+      }
+      return current;
     }
 
     function setText(node, value) {
@@ -861,6 +1091,54 @@ export function renderAttentionControlRoomHtml(timeline) {
       }
     }
 
+    function avatarLabel(cue) {
+      if (cue.avatar) return cue.avatar;
+      if (cue.role === "copilot") return "AI";
+      if (cue.role === "system") return "SYS";
+      const line = cue.line || "?";
+      return line.startsWith("@") ? line.slice(1, 3) : line.slice(0, 2);
+    }
+
+    function drawCutaway(sceneEvent, timeMs, audioEvent) {
+      const scene = sceneEvent.scene || {};
+      const visibleEvents = (audioEventsForScene(sceneEvent) || []).filter((event) => event.startMs <= timeMs);
+      const dialogueKey = scene.id + ":" + visibleEvents.length + ":" + (audioEvent?.cue?.output || "");
+      const marks = { copilot: "AI", slack: "#", deployment: ">_" };
+
+      setText(cutawayMark, marks[scene.variant] || ">>");
+      setText(cutawaySource, scene.sourceLabel || "");
+      if (dialogueKey === renderedDialogueKey) return;
+      renderedDialogueKey = dialogueKey;
+      dialogueStream.textContent = "";
+
+      for (const event of visibleEvents) {
+        const cue = event.cue || {};
+        const role = cue.role || "system";
+        const card = document.createElement("article");
+        card.className = "dialogue-message";
+        card.dataset.role = role;
+        card.classList.toggle("active", event === audioEvent);
+
+        const avatar = document.createElement("div");
+        avatar.className = "dialogue-avatar";
+        avatar.textContent = avatarLabel(cue);
+
+        const copy = document.createElement("div");
+        copy.className = "dialogue-copy";
+        const speaker = document.createElement("div");
+        speaker.className = "dialogue-speaker";
+        speaker.textContent = cue.line || role;
+        const text = document.createElement("div");
+        text.className = "dialogue-text";
+        text.textContent = String(cue.displayText || cue.text || "").replaceAll("\\\\n", "\\n");
+        copy.append(speaker, text);
+        card.append(avatar, copy);
+        dialogueStream.appendChild(card);
+      }
+
+      dialogueStream.scrollTop = dialogueStream.scrollHeight;
+    }
+
     function drawScene(sceneEvent, timeMs) {
       if (!sceneEvent) return;
       const scene = sceneEvent.scene || {};
@@ -868,7 +1146,7 @@ export function renderAttentionControlRoomHtml(timeline) {
       const previousScene = sceneEvents[Math.max(0, sceneIndex - 1)]?.scene || scene;
       const lanes = new Map((scene.lanes || []).map((lane) => [lane.id, lane]));
       const concurrency = clamp(Number(scene.concurrency || 0), 0, 5);
-      const audioEvent = currentAudioEvent(sceneEvent);
+      const audioEvent = currentAudioEvent(sceneEvent, timeMs);
       const transitionProgress = clamp((timeMs - sceneEvent.startMs) / 900, 0, 1);
       const easedProgress = 1 - Math.pow(1 - transitionProgress, 3);
       const fromCamera = cameraFrames[previousScene.camera] || cameraFrames.wide;
@@ -879,6 +1157,8 @@ export function renderAttentionControlRoomHtml(timeline) {
 
       stage.dataset.camera = scene.camera || "wide";
       stage.dataset.scene = scene.id || "";
+      stage.dataset.layout = scene.layout || "control-room";
+      stage.dataset.variant = scene.variant || "";
       stage.style.setProperty("--accent", accentColors[scene.accent] || accentColors.human);
       stage.style.setProperty("--accent-soft", (accentColors[scene.accent] || accentColors.human) + "24");
       roomGrid.style.transform = "scale(" + scale.toFixed(4) + ") translateY(" + translateY.toFixed(2) + "px)";
@@ -893,17 +1173,22 @@ export function renderAttentionControlRoomHtml(timeline) {
       setText(storyBody, scene.body);
       setText(concurrencyValue, String(concurrency));
 
-      for (const laneId of ${JSON.stringify(LANE_ORDER)}) {
-        drawLane(laneId, lanes.get(laneId));
+      if (scene.layout === "cutaway") {
+        drawCutaway(sceneEvent, timeMs, audioEvent);
+      } else {
+        renderedDialogueKey = "";
+        for (const laneId of ${JSON.stringify(LANE_ORDER)}) {
+          drawLane(laneId, lanes.get(laneId));
+        }
+        pods.forEach((pod, index) => {
+          pod.classList.toggle("live", index < concurrency);
+        });
       }
 
-      pods.forEach((pod, index) => {
-        pod.classList.toggle("live", index < concurrency);
-      });
-
       drawMetrics(scene);
-      const voiceRole = audioEvent?.cue?.line || "";
-      setText(narrationRole, voiceRole);
+      const voiceLabel = audioEvent?.cue?.line || "";
+      const voiceRole = audioEvent?.cue?.role || voiceLabel;
+      setText(narrationRole, voiceLabel);
       setText(narrationText, audioEvent?.cue?.text || "");
       narration.dataset.voiceRole = voiceRole.toLowerCase().replaceAll(" ", "-");
       narration.classList.toggle("visible", Boolean(audioEvent?.cue?.text));

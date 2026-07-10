@@ -22,6 +22,7 @@ Current Relay demos:
 - `demos/tsrs/provider-boundary.demo.md`: Kokoro is configured through the provider boundary while TSRS still owns playback.
 
 
+
 ## Commands
 
 ```sh
@@ -53,16 +54,25 @@ The default set remains the original editor plus terminal stage. A scenario can 
 
 ```yaml
 set: attention-control-room
+audioProvider: kokoro
 maxDurationSeconds: 120
 ```
 
-The attention control room consumes explicit JSON scene blocks. Put each narration cue immediately before its scene so they share a start time:
+The attention control room consumes explicit JSON scene blocks. Put one or more audio cues immediately before the scene they belong to. `offsetMs` is relative to that following scene, and at least one cue must begin at offset `0`:
 
 ````markdown
 ```dailies:audio-cue
 line: Narrator
 text: Five workspaces are active at once.
 output: artifacts/scenes/audio/five-workspaces.mp3
+mode: declared-fixture
+```
+
+```dailies:audio-cue
+line: Operator
+text: Route the next decision.
+offsetMs: 4500
+output: artifacts/scenes/audio/route-decision.mp3
 mode: declared-fixture
 ```
 
@@ -77,7 +87,7 @@ mode: declared-fixture
 ```
 ````
 
-Scene data is validated before compilation. The control-room renderer supports `kicker`, `camera`, `accent`, `concurrency`, `foreground`, `lanes`, and `metrics` in addition to the required fields above.
+Scene data is validated before compilation. Audio cues are bound to the following scene and compilation fails if an offset starts outside that scene. Actual generated cue durations are checked again during candidate evaluation. The control-room renderer supports `kicker`, `camera`, `accent`, `concurrency`, `foreground`, `lanes`, and `metrics` in addition to the required fields above.
 
 ## Video renderers
 
@@ -106,7 +116,7 @@ Generated artifacts for each demo follow the scenario frontmatter. The first two
 - `artifacts/tsrs/prune-before-ready.mp4` when `npm run render:video` succeeds
 - `artifacts/<demo-group>/frames/<demo>/*.webp` compact candidate-review frame samples
 
-Use `--provider kokoro` with `generate:audio` when real local Kokoro fixture generation is intended and the optional TSRS Kokoro venv is already installed. Set `TSRS_KOKORO_HELPER` to the non-speaking TSRS wrapper path when the sibling `../tri-state-relay-service/scripts/kokoro-voice-command` helper is not available. Use `--provider speechify` only when real Speechify fixture generation is intended and local credentials are already configured. Set `TSRS_SPEECHIFY_HELPER` to the non-speaking TSRS wrapper path, or put a compatible `speechify` command on `PATH`. The default development path can use the local macOS `say` voice so the video has an audio cue without touching a paid/network provider.
+Use `--provider kokoro` with `generate:audio` when real local Kokoro fixture generation is intended and the optional TSRS Kokoro venv is already installed. A scenario can instead pin `audioProvider` in frontmatter; generation uses that provider automatically and rejects conflicting CLI overrides. Generated fixture sidecars bind each audio file to its text, provider, voice, and speed so stale audio cannot be reused after a cue configuration change. Set `TSRS_KOKORO_HELPER` to the non-speaking TSRS wrapper path when the sibling `../tri-state-relay-service/scripts/kokoro-voice-command` helper is not available. Use `--provider speechify` only when real Speechify fixture generation is intended and local credentials are already configured. Set `TSRS_SPEECHIFY_HELPER` to the non-speaking TSRS wrapper path, or put a compatible `speechify` command on `PATH`. The default development path can use the local macOS `say` voice so the video has an audio cue without touching a paid/network provider.
 
 ## Agent harness
 

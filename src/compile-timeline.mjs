@@ -9,6 +9,8 @@ export function compileTimeline(parsed) {
   let cursorMs = 0;
   const events = [];
   let sceneIndex = 0;
+  const hasScenes = parsed.blocks.some((block) => block.type === "scene");
+  const pendingSceneAudioEvents = [];
 
   for (const block of parsed.blocks) {
     if (block.type === "editor") {
@@ -38,17 +40,31 @@ export function compileTimeline(parsed) {
     }
 
     if (block.type === "audio-cue") {
-      events.push({
+      const offsetMs = block.data?.offsetMs ?? 0;
+      if (!Number.isInteger(offsetMs) || offsetMs < 0) {
+        throw new Error("audio cue offsetMs must be a nonnegative integer");
+      }
+      const event = {
         surface: "audio",
         action: "declare-cue",
-        startMs: cursorMs,
+        startMs: cursorMs + offsetMs,
         durationMs: 0,
         cue: block.data,
-      });
+      };
+      events.push(event);
+      if (hasScenes) pendingSceneAudioEvents.push(event);
     }
 
     if (block.type === "scene") {
       const scene = validateSceneData(block.data, sceneIndex);
+      const sceneEndMs = cursorMs + scene.durationMs;
+      for (const event of pendingSceneAudioEvents) {
+        if (event.startMs < cursorMs || event.startMs >= sceneEndMs) {
+          throw new Error(`audio cue offsetMs must start within following scene ${scene.id}`);
+        }
+        event.sceneIndex = sceneIndex;
+      }
+      pendingSceneAudioEvents.length = 0;
       events.push({
         surface: "scene",
         action: "show-scene",
@@ -59,6 +75,10 @@ export function compileTimeline(parsed) {
       cursorMs += scene.durationMs;
       sceneIndex += 1;
     }
+  }
+
+  if (pendingSceneAudioEvents.length > 0) {
+    throw new Error("audio cues in scene timelines must be followed by a scene");
   }
 
   const timeline = {
@@ -126,10 +146,28 @@ export function validateSceneData(data, index = 0) {
     }
   }
 
+  const layout = data.layout || "control-room";
+  if (!["control-room", "cutaway"].includes(layout)) {
+    throw new Error(`scene ${index + 1} layout must be control-room or cutaway`);
+  }
+
+  if (layout === "cutaway") {
+    if (data.reenactment !== true) {
+      throw new Error(`scene ${index + 1} cutaways must declare reenactment: true`);
+    }
+    if (typeof data.sourceLabel !== "string" || !data.sourceLabel.trim()) {
+      throw new Error(`scene ${index + 1} cutaways require sourceLabel`);
+    }
+    if (!["copilot", "slack", "deployment"].includes(data.variant)) {
+      throw new Error(`scene ${index + 1} cutaway variant must be copilot, slack, or deployment`);
+    }
+  }
+
   return {
     kicker: "",
     camera: "wide",
     accent: "human",
+    layout,
     concurrency: 0,
     foreground: {
       label: "Human foreground",

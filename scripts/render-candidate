@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 scenario=""
-provider="say"
+provider=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -31,6 +31,10 @@ fi
 npm run compile:demo -- "$scenario"
 npm run render:preview -- "$scenario"
 npm run evaluate:demo -- "$scenario"
-npm run generate:audio -- "$scenario" --provider "$provider"
+if [[ -n "$provider" ]]; then
+  npm run generate:audio -- "$scenario" --provider "$provider"
+else
+  npm run generate:audio -- "$scenario"
+fi
 npm run render:video -- "$scenario"
 npm run evaluate:candidate -- "$scenario"

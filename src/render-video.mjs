@@ -5,9 +5,9 @@ import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { cueEffectiveProvider, cueFixtureFingerprint, cueFixtureMatches, readScenarioWithAudioCues } from "./audio-cues.mjs";
 import { resolveArtifactOutputPath } from "./compile-timeline.mjs";
 import { renderPreview } from "./render-preview.mjs";
-import { readScenarioWithAudioCues } from "./audio-cues.mjs";
 import { renderWithChrome } from "./render-with-chrome.mjs";
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -136,13 +136,20 @@ async function writeRenderManifest(manifestPath, data) {
     timelineSha256: sha256Text(JSON.stringify(data.timeline)),
     previewSha256: await sha256File(data.previewPath),
     videoSha256: await sha256File(data.videoPath),
-    audioCues: await Promise.all(data.audioCues.map(async (cue) => ({
-      line: cue.line,
-      output: path.relative(PROJECT_ROOT, cue.outputPath),
-      startMs: cue.event?.startMs || 0,
-      textSha256: sha256Text(cue.text || ""),
-      sha256: await sha256File(cue.outputPath),
-    }))),
+    audioCues: await Promise.all(data.audioCues.map(async (cue) => {
+      const provider = await cueEffectiveProvider(cue);
+      return {
+        line: cue.line,
+        output: path.relative(PROJECT_ROOT, cue.outputPath),
+        startMs: cue.event?.startMs || 0,
+        provider,
+        voice: cue.voice || null,
+        speed: cue.speed ?? null,
+        textSha256: sha256Text(cue.text || ""),
+        synthesisSha256: await cueFixtureFingerprint(cue),
+        sha256: await sha256File(cue.outputPath),
+      };
+    })),
   };
   await mkdir(path.dirname(manifestPath), { recursive: true });
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
@@ -151,20 +158,11 @@ async function writeRenderManifest(manifestPath, data) {
 async function audioCuesWithExistingFiles(cues) {
   const available = [];
   for (const cue of cues) {
-    if (await exists(cue.outputPath) && await cueTextSidecarMatches(cue)) {
+    if (await exists(cue.outputPath) && await cueFixtureMatches(cue)) {
       available.push(cue);
     }
   }
   return available;
-}
-
-async function cueTextSidecarMatches(cue) {
-  try {
-    const text = await readFile(`${cue.outputPath}.txt`, "utf8");
-    return text === (cue.text || "");
-  } catch {
-    return false;
-  }
 }
 
 async function renderDurationSeconds(timeline, cues) {

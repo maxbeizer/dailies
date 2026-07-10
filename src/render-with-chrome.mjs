@@ -22,7 +22,7 @@ export async function renderWithChrome(options) {
 
   try {
     browser = launchChrome(chromePath, port, profileDir, options.url);
-    const target = await waitForPageTarget(port);
+    const target = await waitForPageTarget(port, options.url);
     cdp = await connectCdp(target.webSocketDebuggerUrl);
     await cdp.send("Page.enable");
     await cdp.send("Runtime.enable");
@@ -102,14 +102,22 @@ function launchChrome(chromePath, port, profileDir, url) {
   return child;
 }
 
-async function waitForPageTarget(port) {
+async function waitForPageTarget(port, expectedUrl) {
   let lastError;
   for (let attempt = 0; attempt < 120; attempt += 1) {
     try {
       const response = await fetch(`http://127.0.0.1:${port}/json/list`);
       if (response.ok) {
         const targets = await response.json();
-        const page = targets.find((target) => target.type === "page" && target.webSocketDebuggerUrl);
+        const page = targets.find((target) => target.type === "page"
+          && target.webSocketDebuggerUrl
+          && target.url === expectedUrl)
+          || targets.find((target) => target.type === "page"
+            && target.webSocketDebuggerUrl
+            && target.url.startsWith(expectedUrl.split("?")[0]))
+          || targets.find((target) => target.type === "page"
+            && target.webSocketDebuggerUrl
+            && !target.url.startsWith("chrome://"));
         if (page) return page;
       }
     } catch (error) {

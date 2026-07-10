@@ -21,6 +21,7 @@ const SECRET_PATTERNS = [
 ];
 
 const ALLOWED_COMMANDS = new Set(["relay"]);
+const ALLOWED_AUDIO_PROVIDERS = new Set(["say", "speechify", "kokoro"]);
 const ATTENTION_CONTROL_ROOM_SET = "attention-control-room";
 
 export async function evaluateDemo(sourcePath) {
@@ -39,7 +40,8 @@ export async function evaluateDemo(sourcePath) {
     check(checks, "attention_control_room_set", expectedTimeline.set === ATTENTION_CONTROL_ROOM_SET, "timeline selects the attention control room set");
     check(checks, "scene_blocks_present", parsed.blocks.filter((block) => block.type === "scene").length >= 8, "scenario has at least eight dailies:scene blocks");
     check(checks, "scene_blocks_valid", sceneBlocksValid(parsed), "scene blocks contain valid, renderable JSON");
-    check(checks, "scene_narration_aligned", sceneNarrationAligned(expectedTimeline), "each scene begins with one narration cue");
+    check(checks, "scene_narration_aligned", sceneNarrationAligned(expectedTimeline), "each scene begins with an audio cue and all cues stay inside a scene");
+    check(checks, "cutaway_scenes_labeled", cutawayScenesLabeled(parsed), "cutaway scenes declare their source and reenactment status");
     check(checks, "timeline_within_declared_limit", expectedTimeline.durationMs <= maxDurationSeconds * 1000, `compiled timeline stays under ${maxDurationSeconds} seconds`);
   } else {
     check(checks, "editor_surface_present", parsed.blocks.some((block) => block.type === "editor"), "scenario has a dailies:editor block");
@@ -110,14 +112,28 @@ function sceneBlocksValid(parsed) {
 }
 
 function sceneNarrationAligned(timeline) {
-  const audioStarts = new Map();
-  for (const event of timeline.events || []) {
-    if (event.surface !== "audio") continue;
-    audioStarts.set(event.startMs, (audioStarts.get(event.startMs) || 0) + 1);
+  const scenes = (timeline.events || []).filter((event) => event.surface === "scene");
+  const audioEvents = (timeline.events || []).filter((event) => event.surface === "audio");
+  const assigned = new Set();
+
+  if (scenes.length === 0 || audioEvents.length === 0) return false;
+
+  for (let sceneIndex = 0; sceneIndex < scenes.length; sceneIndex += 1) {
+    const scene = scenes[sceneIndex];
+    const sceneAudio = audioEvents
+      .filter((event) => event.sceneIndex === sceneIndex)
+      .sort((left, right) => left.startMs - right.startMs);
+    if (sceneAudio.length === 0 || sceneAudio[0].startMs !== scene.startMs) return false;
+    sceneAudio.forEach((event) => assigned.add(event));
   }
 
-  const scenes = (timeline.events || []).filter((event) => event.surface === "scene");
-  return scenes.length > 0 && scenes.every((scene) => audioStarts.get(scene.startMs) === 1);
+  return assigned.size === audioEvents.length;
+}
+
+function cutawayScenesLabeled(parsed) {
+  return parsed.blocks
+    .filter((block) => block.type === "scene" && block.data?.layout === "cutaway")
+    .every((block) => block.data?.reenactment === true && typeof block.data?.sourceLabel === "string" && block.data.sourceLabel.trim());
 }
 
 function relayCommandsOnly(parsed) {
@@ -141,7 +157,18 @@ function audioCuesDeclared(parsed) {
   if (cues.length === 0) return false;
   return cues.every((cue) => {
     const data = cue.data || {};
-    return Boolean(data.line && data.text && data.output && data.mode === "declared-fixture" && isSafeArtifactPath(data.output));
+    const provider = data.provider || parsed.frontmatter.audioProvider || null;
+    const speedValid = data.speed === undefined
+      || (provider === "kokoro" && Number.isFinite(Number(data.speed)) && Number(data.speed) > 0);
+    return Boolean(
+      data.line
+      && data.text
+      && data.output
+      && data.mode === "declared-fixture"
+      && isSafeArtifactPath(data.output)
+      && (!provider || ALLOWED_AUDIO_PROVIDERS.has(provider))
+      && speedValid,
+    );
   });
 }
 

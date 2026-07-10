@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readScenarioWithAudioCues } from "./audio-cues.mjs";
+import { cueFixtureFingerprint, cueFixtureMatches, readScenarioWithAudioCues } from "./audio-cues.mjs";
 import { resolveArtifactOutputPath } from "./compile-timeline.mjs";
 import { defaultPreviewPath } from "./render-preview.mjs";
 import { defaultRenderManifestPath, defaultVideoPath } from "./render-video.mjs";
@@ -27,8 +27,11 @@ async function evaluateCandidate(source) {
   await check(checks, "manifest_matches_current_timeline", manifestMatchesTimeline(manifest, timeline), "render manifest matches the current compiled timeline");
   await check(checks, "manifest_matches_video", manifestMatchesVideo(manifest, videoPath), "render manifest video hash matches the MP4 artifact");
   await check(checks, "audio_fixtures_exist", Promise.all(cues.map((cue) => exists(cue.outputPath))).then((results) => results.every(Boolean)), "all declared audio cue files exist");
-  await check(checks, "audio_fixtures_match_cue_text", audioFixturesMatchCueText(cues), "audio sidecar text matches current cue text");
+  await check(checks, "audio_fixtures_match_cue_config", audioFixturesMatchCueConfig(cues), "audio sidecars match current cue text and any declared provider, voice, and speed");
   await check(checks, "audio_cues_do_not_overlap", audioCuesDoNotOverlap(cues), "each narration cue finishes before the next cue begins");
+  if ((timeline.events || []).some((event) => event.surface === "scene")) {
+    await check(checks, "audio_cues_stay_within_scenes", audioCuesStayWithinScenes(cues, timeline), "each audio cue finishes before its assigned scene ends");
+  }
   await check(checks, "manifest_matches_audio_cues", manifestMatchesAudioCues(manifest, cues), "render manifest audio cue hashes match current cues");
 
   const metadata = videoExists ? await ffprobeIfPossible(videoPath) : null;
@@ -98,15 +101,8 @@ async function manifestMatchesVideo(manifest, videoPath) {
   return Boolean(manifest?.videoSha256 && manifest.videoSha256 === await sha256File(videoPath));
 }
 
-async function audioFixturesMatchCueText(cues) {
-  const results = await Promise.all(cues.map(async (cue) => {
-    try {
-      const text = await readFile(`${cue.outputPath}.txt`, "utf8");
-      return text === (cue.text || "");
-    } catch {
-      return false;
-    }
-  }));
+async function audioFixturesMatchCueConfig(cues) {
+  const results = await Promise.all(cues.map((cue) => cueFixtureMatches(cue)));
   return results.every(Boolean);
 }
 
@@ -118,6 +114,8 @@ async function manifestMatchesAudioCues(manifest, cues) {
     const manifestCue = byOutput.get(relativeOutput);
     if (!manifestCue) return false;
     if (manifestCue.textSha256 !== sha256Text(cue.text || "")) return false;
+    const synthesisSha256 = await cueFixtureFingerprint(cue);
+    if (synthesisSha256 && manifestCue.synthesisSha256 !== synthesisSha256) return false;
     if (manifestCue.sha256 !== await sha256File(cue.outputPath)) return false;
   }
   return true;
@@ -131,6 +129,23 @@ async function audioCuesDoNotOverlap(cues) {
     const metadata = await ffprobe(cue.outputPath);
     const durationMs = Number(metadata?.format?.duration || 0) * 1000;
     if (!durationMs || (cue.event?.startMs || 0) + durationMs > (nextCue.event?.startMs || 0)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export async function audioCuesStayWithinScenes(cues, timeline) {
+  const scenes = (timeline.events || []).filter((event) => event.surface === "scene");
+  if (scenes.length === 0) return true;
+  for (const cue of cues) {
+    const cueStartMs = cue.event?.startMs ?? -1;
+    const scene = scenes[cue.event?.sceneIndex];
+    if (!scene) return false;
+    if (cueStartMs < scene.startMs || cueStartMs >= scene.startMs + scene.durationMs) return false;
+    const metadata = await ffprobe(cue.outputPath);
+    const durationMs = Number(metadata?.format?.duration || 0) * 1000;
+    if (!durationMs || cueStartMs + durationMs > scene.startMs + scene.durationMs) {
       return false;
     }
   }

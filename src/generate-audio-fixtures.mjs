@@ -1,34 +1,73 @@
-import { mkdir, rm } from "node:fs/promises";
+import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readScenarioWithAudioCues, writeCueTextFile } from "./audio-cues.mjs";
+import { readScenarioWithAudioCues, writeCueFixtureSidecars } from "./audio-cues.mjs";
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_SPEECHIFY_COMMAND = "speechify";
 const DEFAULT_KOKORO_COMMAND = path.resolve(PROJECT_ROOT, "../tri-state-relay-service/scripts/kokoro-voice-command");
+const AUDIO_PROVIDERS = new Set(["say", "speechify", "kokoro"]);
 
 async function generateAudioFixtures(source, options) {
   const { cues } = await readScenarioWithAudioCues(source);
   if (cues.length === 0) {
     throw new Error("scenario declares no audio cues");
   }
+  const provider = resolveAudioProvider(cues, options.provider);
 
   const generated = [];
   for (const cue of cues) {
+    if (cue.speed !== undefined && provider !== "kokoro") {
+      throw new Error(`audio cue speed requires the kokoro provider: ${cue.output || cue.line || "unknown cue"}`);
+    }
     await mkdir(path.dirname(cue.outputPath), { recursive: true });
-    const textPath = await writeCueTextFile(cue);
-    if (options.provider === "speechify") {
-      await generateWithSpeechify(cue, textPath, options);
-    } else if (options.provider === "kokoro") {
-      await generateWithKokoro(cue, textPath, options);
-    } else {
-      await generateWithSay(cue, textPath);
+    const temporaryOutputPath = tempOutputPath(cue.outputPath);
+    const textPath = `${temporaryOutputPath}.txt`;
+    const temporaryCue = { ...cue, outputPath: temporaryOutputPath };
+    await writeFile(textPath, cue.text || "", "utf8");
+    try {
+      if (provider === "speechify") {
+        await generateWithSpeechify(temporaryCue, textPath, options);
+      } else if (provider === "kokoro") {
+        await generateWithKokoro(temporaryCue, textPath, options);
+      } else if (provider === "say") {
+        await generateWithSay(temporaryCue, textPath);
+      } else {
+        throw new Error(`unsupported audio provider: ${provider}`);
+      }
+      await rename(temporaryOutputPath, cue.outputPath);
+      await writeCueFixtureSidecars(cue, provider);
+    } finally {
+      await rm(textPath, { force: true });
+      await rm(temporaryOutputPath, { force: true });
     }
     generated.push(path.relative(PROJECT_ROOT, cue.outputPath));
   }
 
   return generated;
+}
+
+export function resolveAudioProvider(cues, requestedProvider) {
+  const declaredProviders = [...new Set(cues.map((cue) => cue.provider).filter(Boolean))];
+  if (declaredProviders.length > 1) {
+    throw new Error("a scenario must use one declared audio provider");
+  }
+  const declaredProvider = declaredProviders[0] || null;
+  if (requestedProvider && declaredProvider && requestedProvider !== declaredProvider) {
+    throw new Error(`scenario requires the ${declaredProvider} audio provider`);
+  }
+  const provider = requestedProvider || declaredProvider || "say";
+  if (!AUDIO_PROVIDERS.has(provider)) {
+    throw new Error("audio provider must be say, speechify, or kokoro");
+  }
+  return provider;
+}
+
+function tempOutputPath(outputPath) {
+  const extension = path.extname(outputPath);
+  const stem = extension ? outputPath.slice(0, -extension.length) : outputPath;
+  return `${stem}.tmp-${process.pid}${extension}`;
 }
 
 async function generateWithSay(cue, textPath) {
@@ -83,6 +122,13 @@ async function generateWithKokoro(cue, textPath, options) {
     "--voice-id",
     voiceId,
   ];
+  if (cue.speed !== undefined) {
+    const speed = Number(cue.speed);
+    if (!Number.isFinite(speed) || speed <= 0) {
+      throw new Error(`audio cue speed must be a positive number: ${cue.output || cue.line || "unknown cue"}`);
+    }
+    args.push("--speed", String(speed));
+  }
 
   try {
     await run(options.kokoroCommand, args);
@@ -104,9 +150,9 @@ async function generateWithKokoro(cue, textPath, options) {
   }
 }
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const args = {
-    provider: "say",
+    provider: null,
     keychainService: "TSRS_SPEECHIFY_API_KEY",
     speechifyCommand: process.env.TSRS_SPEECHIFY_HELPER || DEFAULT_SPEECHIFY_COMMAND,
     kokoroCommand: process.env.TSRS_KOKORO_HELPER || DEFAULT_KOKORO_COMMAND,
@@ -116,7 +162,12 @@ function parseArgs(argv) {
   for (let index = 2; index < argv.length; index += 1) {
     const value = argv[index];
     if (value === "--provider") {
-      args.provider = argv[++index];
+      const provider = argv[index + 1];
+      if (!provider || provider.startsWith("--")) {
+        throw new Error("--provider requires say, speechify, or kokoro");
+      }
+      args.provider = provider;
+      index += 1;
     } else if (value === "--keychain-service") {
       args.keychainService = argv[++index];
     } else if (value === "--speechify-command") {
@@ -128,7 +179,7 @@ function parseArgs(argv) {
     }
   }
 
-  if (!["say", "speechify", "kokoro"].includes(args.provider)) {
+  if (args.provider && !AUDIO_PROVIDERS.has(args.provider)) {
     throw new Error("--provider must be say, speechify, or kokoro");
   }
 
