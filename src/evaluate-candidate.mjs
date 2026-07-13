@@ -8,6 +8,7 @@ import { cueFixtureFingerprint, cueFixtureMatches, readScenarioWithAudioCues } f
 import { resolveArtifactOutputPath } from "./compile-timeline.mjs";
 import { defaultPreviewPath } from "./render-preview.mjs";
 import { defaultRenderManifestPath, defaultVideoPath } from "./render-video.mjs";
+import { inspectMediaSources, inspectProductionAssets, manifestMatchesMedia, manifestMatchesProduction, mediaEvents } from "./media-fixtures.mjs";
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -40,6 +41,17 @@ async function evaluateCandidate(source) {
     await check(checks, "audio_cues_stay_within_scenes", audioCuesStayWithinScenes(cues, timeline), "each audio cue finishes before its assigned scene ends");
   }
   await check(checks, "manifest_matches_audio_cues", manifestMatchesAudioCues(manifest, cues), "render manifest audio cue hashes match current cues");
+  if (mediaEvents(timeline).length > 0) {
+    const mediaInspection = await inspectMediaSources(timeline);
+    await check(checks, "media_sources_exist", mediaInspection.every((item) => item.exists), "every declared media source exists");
+    await check(checks, "media_source_windows_valid", mediaInspection.every((item) => item.probe === "available" && item.windowValid), "ffprobe confirms every declared source window");
+    await check(checks, "manifest_matches_media", manifestMatchesMedia(manifest, timeline), "render manifest media hashes and configuration match current fixtures");
+  }
+  if (timeline.production) {
+    const productionAssets = await inspectProductionAssets(timeline);
+    await check(checks, "production_assets_exist", productionAssets.every((item) => item.exists), "every declared production asset exists");
+    await check(checks, "manifest_matches_production", manifestMatchesProduction(manifest, timeline), "render manifest theme and background hash match current production controls");
+  }
 
   await check(checks, "video_is_1280x720", Boolean(videoStream && videoStream.width === 1280 && videoStream.height === 720), "video dimensions are 1280x720");
   await check(checks, "video_has_h264", videoStream?.codec_name === "h264", "video codec is H.264");

@@ -1,10 +1,16 @@
 {
   "name": "dailies",
   "version": "0.1.0",
+  "description": "A source-driven, agent-directed studio for deterministic demo videos.",
   "private": true,
+  "license": "ISC",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test": "node --test",
+    "clean": "node src/clean-artifacts.mjs",
     "compile:demo": "node src/compile-timeline.mjs",
     "generate:audio": "node src/generate-audio-fixtures.mjs",
     "render:preview": "node src/render-preview.mjs",
@@ -12,6 +18,13 @@
     "render:candidate": "scripts/render-candidate",
     "evaluate:demo": "node src/evaluate-demo.mjs",
     "evaluate:candidate": "node src/evaluate-candidate.mjs",
-    "check": "node src/check-demos.mjs"
-  }
+    "check": "node src/check-demos.mjs && node src/check-showcases.mjs",
+    "refresh:showcases": "node src/check-showcases.mjs --write"
+  },
+  "keywords": [
+    "demo",
+    "video",
+    "agent",
+    "studio"
+  ]
 }

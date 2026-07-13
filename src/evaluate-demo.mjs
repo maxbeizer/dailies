@@ -5,6 +5,7 @@ import { parseDemoMarkdown } from "./parse-demo.mjs";
 import { compileTimeline, defaultTimelinePath, ledgerCountersMonotonic, resolveArtifactOutputPath, validateSceneData } from "./compile-timeline.mjs";
 import { defaultPreviewPath } from "./render-preview.mjs";
 import { renderState } from "./render-state.mjs";
+import { inspectMediaSources, inspectProductionAssets, mediaEvents } from "./media-fixtures.mjs";
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -20,7 +21,6 @@ const SECRET_PATTERNS = [
   { name: "session_uuid", pattern: /\b[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\b/i },
 ];
 
-const ALLOWED_COMMANDS = new Set(["relay"]);
 const ALLOWED_AUDIO_PROVIDERS = new Set(["say", "speechify", "kokoro"]);
 const ATTENTION_CONTROL_ROOM_SET = "attention-control-room";
 
@@ -61,7 +61,7 @@ export async function evaluateDemo(sourcePath) {
   check(checks, "self_review_present", parsed.blocks.some((block) => block.type === "self-review"), "scenario declares self-review criteria");
   check(checks, "self_review_json_valid", selfReviewJsonValid(parsed), "self-review block contains valid JSON");
   check(checks, "fixture_only_execution", parsed.frontmatter.executionMode === "fixture-only" && !/\bexec\s*:\s*true\b/i.test(markdown), "scenario is fixture-only and does not request live execution");
-  check(checks, "relay_commands_only", relayCommandsOnly(parsed), "terminal command lines use the relay allowlist");
+  check(checks, "relay_commands_only", relayCommandsOnly(parsed), "terminal command lines use the fixture command allowlist");
   check(checks, "audio_cues_declared", audioCuesDeclared(parsed), "audio cue blocks declare line, text, output, and non-live mode");
   check(checks, "no_obvious_secrets_or_private_paths", noSecretPatterns(markdown), "scenario text does not match obvious secret or private-path patterns");
   check(checks, "timeline_artifact_exists", await exists(timelinePath), `timeline artifact exists at ${path.relative(PROJECT_ROOT, timelinePath)}`);
@@ -72,6 +72,20 @@ export async function evaluateDemo(sourcePath) {
   check(checks, "preview_artifact_exists", await exists(previewPath), `preview artifact exists at ${path.relative(PROJECT_ROOT, previewPath)}`);
   check(checks, "preview_has_expected_surfaces", await previewHasExpectedSurfaces(previewPath, set), `preview artifact includes the expected ${set} set marker`);
   check(checks, "preview_has_no_private_paths", await textArtifactHasNoPrivatePaths(previewPath), "preview artifact does not expose local private paths");
+  const mediaInspection = await inspectMediaSources(expectedTimeline);
+  if (mediaInspection.length > 0) {
+    check(checks, "media_sources_exist", mediaInspection.every((item) => item.exists), "every declared media source exists under assets/");
+    const probeUnavailable = mediaInspection.some((item) => item.probe === "unavailable");
+    if (probeUnavailable) {
+      skip(checks, "media_source_windows_valid", "ffprobe is unavailable; source-window validation is deferred to candidate evaluation");
+    } else {
+      check(checks, "media_source_windows_valid", mediaInspection.every((item) => item.windowValid), "every declared source window fits inside its media file");
+    }
+    const productionAssets = await inspectProductionAssets(expectedTimeline);
+    if (productionAssets.length > 0) {
+      check(checks, "production_assets_exist", productionAssets.every((item) => item.exists), "every declared production asset exists under assets/");
+    }
+  }
 
   const selfReview = parsed.blocks.find((block) => block.type === "self-review")?.data;
   for (const artifact of selfReview?.requiredArtifacts || []) {
@@ -86,7 +100,7 @@ export async function evaluateDemo(sourcePath) {
     "every requested self-review check was executed and passed",
   );
 
-  const status = checks.every((item) => item.status === "pass") ? "pass" : "fail";
+  const status = checks.some((item) => item.status === "fail") ? "fail" : "pass";
   const report = {
     version: 1,
     status,
@@ -108,6 +122,10 @@ function check(checks, name, passed, detail) {
     status: passed ? "pass" : "fail",
     detail,
   });
+}
+
+function skip(checks, name, detail) {
+  checks.push({ name, status: "skip", detail });
 }
 
 function selfReviewJsonValid(parsed) {
@@ -167,11 +185,13 @@ function ledgerActivityCount(parsed) {
 }
 
 function relayCommandsOnly(parsed) {
-  return terminalCommands(parsed).every((command) => {
-    if (containsShellControl(command)) return false;
-    const executable = command.trim().split(/\s+/)[0];
-    return ALLOWED_COMMANDS.has(executable);
-  });
+  return terminalCommands(parsed).every(terminalCommandAllowed);
+}
+
+export function terminalCommandAllowed(command) {
+  if (containsShellControl(command)) return false;
+  if (/^relay(?:\s|$)/.test(command.trim())) return true;
+  return /^npm run (?:compile:demo|render:preview|evaluate:demo|render:video|evaluate:candidate|check)(?:\s+--(?:\s|$).*)?$/.test(command.trim());
 }
 
 function terminalCommands(parsed) {
@@ -257,6 +277,9 @@ async function timelineHasExpectedSurfaces(timelinePath, set) {
     if (set === ATTENTION_CONTROL_ROOM_SET) {
       return timeline.set === ATTENTION_CONTROL_ROOM_SET && surfaces.has("scene") && surfaces.has("audio");
     }
+    if (set === "studio-monitor" || set === "full-screen-media") {
+      return timeline.set === set && surfaces.has("media");
+    }
     return surfaces.has("editor") && surfaces.has("terminal");
   } catch {
     return false;
@@ -277,6 +300,12 @@ async function previewHasExpectedSurfaces(previewPath, set) {
         && raw.includes('data-lane-id="brain"')
         && raw.includes('data-lane-id="github"')
         && raw.includes('data-lane-id="slack"');
+    }
+    if (set === "studio-monitor" || set === "full-screen-media") {
+      return raw.includes('data-dailies-preview="true"')
+        && raw.includes(`data-dailies-set="${set}"`)
+        && raw.includes('id="mediaMonitor"')
+        && raw.includes("window.__dailiesPrepareFrame");
     }
     return raw.includes('data-dailies-preview="true"')
       && raw.includes('data-surface="editor"')

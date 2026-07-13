@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { parseDemoMarkdown } from "./parse-demo.mjs";
 import { compileTimeline, defaultTimelinePath, resolveArtifactOutputPath } from "./compile-timeline.mjs";
 import { RENDER_STATE_BROWSER_SCRIPT } from "./render-state.mjs";
-import { renderAttentionControlRoomHtml } from "./sets/attention-control-room.mjs";
+import { renderNamedSetHtml } from "./sets/index.mjs";
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -35,8 +35,8 @@ export async function renderPreview(source) {
 }
 
 export function renderPreviewHtml(timeline) {
-  if (timeline.set === "attention-control-room") {
-    return renderAttentionControlRoomHtml(timeline);
+  if (timeline.set && timeline.set !== "editor-terminal") {
+    return renderNamedSetHtml(timeline);
   }
 
   const timelineJson = safeScriptJson(timeline);

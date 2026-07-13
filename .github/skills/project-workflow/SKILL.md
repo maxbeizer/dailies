@@ -31,6 +31,8 @@ Use this skill for Dailies work that benefits from focused guidance beyond `AGEN
 8. **Candidate gate:** inspect `npm run evaluate:candidate -- <scenario>` output and sampled frames before asking the user to watch.
 9. **Review:** inspect source, timeline, preview, evaluation report, visual captures, audio manifest, and video before asking the user to watch.
 
+For scenarios with `dailies:media`, use Chrome capture. Confirm the media file stays under `assets/`, `ffprobe` accepts the requested source window, the render manifest binds the source hash, and a sampled frame visibly contains the expected decoded media.
+
 ## Quality Loop
 
 1. Prefer quality over speed for consequential changes.

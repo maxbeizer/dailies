@@ -86,6 +86,15 @@ Named sets are selected with the scenario `set` frontmatter key. The `attention-
 
 `layout: ledger` is timeline-global even though headlines and camera state remain scene-based. Merge declared ledger entries and opted-in audio cues by absolute reveal time; never reset the stream at a scene boundary. Cumulative counters are authored snapshots, must remain monotonic, and should use aggregate values that are safe for the intended audience. Keep workspaces as a gauge rather than pretending they are cumulative.
 
+Media fixture boundary:
+
+- `dailies:media` currently supports muted MP4 files under repository-relative `assets/` paths.
+- Validate source paths and requested source windows before treating a candidate as current.
+- Media timelines must use Chrome capture. Seek each source explicitly, wait for the seek, draw the decoded frame into a canvas, and only then capture the Dailies frame.
+- Record media source hashes and configuration fingerprints in render manifests so changed fixtures make old candidates stale.
+- Record theme and background-asset hashes too; production controls are part of candidate freshness.
+- Keep committed sample media small and deliberate. Generated videos remain under ignored `artifacts/`.
+
 TSRS audio boundary:
 
 - Prefer the non-speaking TSRS Speechify wrapper for real audio fixtures when explicitly requested: `<app-bin>/speechify --text-file <text-file> --output-file <output-file> --voice-id <voice-id> --keychain-service TSRS_SPEECHIFY_API_KEY`.

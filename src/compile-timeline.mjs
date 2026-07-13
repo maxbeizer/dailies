@@ -2,6 +2,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseDemoMarkdown } from "./parse-demo.mjs";
+import { validateMediaData, validateProductionConfig } from "./media-fixtures.mjs";
+import { SUPPORTED_SET_NAMES } from "./set-names.mjs";
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -9,6 +11,7 @@ export function compileTimeline(parsed) {
   let cursorMs = 0;
   const events = [];
   let sceneIndex = 0;
+  let mediaIndex = 0;
   const hasScenes = parsed.blocks.some((block) => block.type === "scene");
   const pendingSceneAudioEvents = [];
 
@@ -55,6 +58,20 @@ export function compileTimeline(parsed) {
       if (hasScenes) pendingSceneAudioEvents.push(event);
     }
 
+    if (block.type === "media") {
+      const media = validateMediaData(block.data, mediaIndex);
+      const startMs = cursorMs + media.offsetMs;
+      events.push({
+        surface: "media",
+        action: "show-video",
+        startMs,
+        durationMs: media.durationMs,
+        media,
+      });
+      cursorMs = startMs + media.durationMs;
+      mediaIndex += 1;
+    }
+
     if (block.type === "scene") {
       const scene = validateSceneData(block.data, sceneIndex);
       const sceneEndMs = cursorMs + scene.durationMs;
@@ -81,6 +98,23 @@ export function compileTimeline(parsed) {
     throw new Error("audio cues in scene timelines must be followed by a scene");
   }
 
+  const selectedSet = parsed.frontmatter.set || "editor-terminal";
+  const mediaSet = selectedSet === "studio-monitor" || selectedSet === "full-screen-media";
+  if (mediaIndex > 0 && !mediaSet) {
+    throw new Error("media fixtures require set: studio-monitor or set: full-screen-media");
+  }
+  if ((parsed.frontmatter.theme || parsed.frontmatter.background) && !mediaSet) {
+    throw new Error("theme and background controls require a media studio set");
+  }
+  for (const event of events.filter((item) => item.surface === "media")) {
+    if (selectedSet === "studio-monitor" && event.media.panel !== "monitor") {
+      throw new Error("studio-monitor media must target panel: monitor");
+    }
+    if (selectedSet === "full-screen-media" && event.media.panel !== "stage") {
+      throw new Error("full-screen-media media must target panel: stage");
+    }
+  }
+
   const timeline = {
     version: 1,
     sourcePath: path.relative(PROJECT_ROOT, parsed.sourcePath),
@@ -93,7 +127,14 @@ export function compileTimeline(parsed) {
   };
 
   if (parsed.frontmatter.set) {
+    if (!SUPPORTED_SET_NAMES.includes(parsed.frontmatter.set)) {
+      throw new Error(`set must be one of: ${SUPPORTED_SET_NAMES.join(", ")}`);
+    }
     timeline.set = parsed.frontmatter.set;
+  }
+
+  if (mediaSet) {
+    timeline.production = validateProductionConfig(parsed.frontmatter);
   }
 
   if (parsed.frontmatter.maxDurationSeconds !== undefined) {

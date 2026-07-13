@@ -210,11 +210,16 @@ async function waitForPreviewReady(cdp) {
 
 async function drawAt(cdp, timeMs) {
   const result = await cdp.send("Runtime.evaluate", {
-    expression: `currentMs = ${Math.round(timeMs)};
+    expression: `(async () => {
+      currentMs = ${Math.round(timeMs)};
       startedAtMs = currentMs;
       startTimestamp = 0;
       playing = false;
-      draw(currentMs);
+      if (typeof window.__dailiesPrepareFrame === "function") {
+        await window.__dailiesPrepareFrame(currentMs);
+      } else {
+        draw(currentMs);
+      }
       for (const animation of document.getAnimations()) {
         if (animation.playState !== "paused" || window.__dailiesCaptureAnimations.has(animation)) {
           window.__dailiesCaptureAnimations.add(animation);
@@ -222,7 +227,9 @@ async function drawAt(cdp, timeMs) {
           animation.currentTime = currentMs;
         }
       }
-      new Promise((resolve) => requestAnimationFrame(() => resolve(true)))`,
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(true)));
+      return true;
+    })()`,
     awaitPromise: true,
     returnByValue: true,
   });

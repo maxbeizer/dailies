@@ -82,7 +82,7 @@ function normalizeFenceType(info) {
 }
 
 function parseBlockData(type, content) {
-  if (type === "audio-cue") return parseKeyValueBlock(content);
+  if (type === "audio-cue" || type === "media") return parseKeyValueBlock(content);
   if (type === "scene" || type === "self-review") return parseJsonBlock(content);
   return null;
 }

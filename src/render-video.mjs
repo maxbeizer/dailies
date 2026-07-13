@@ -9,6 +9,7 @@ import { cueEffectiveProvider, cueFixtureFingerprint, cueFixtureMatches, readSce
 import { resolveArtifactOutputPath } from "./compile-timeline.mjs";
 import { renderPreview } from "./render-preview.mjs";
 import { renderWithChrome } from "./render-with-chrome.mjs";
+import { mediaManifestEntries, productionManifest } from "./media-fixtures.mjs";
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_ZSHOT_PATH = path.join(process.env.HOME || "", "Library/Application Support/ZShot/zshot");
@@ -53,6 +54,7 @@ async function renderVideo(source) {
       previewUrl,
       capturePath,
       durationSeconds: Number(durationSeconds),
+      timeline,
     });
   } finally {
     await server.close();
@@ -81,7 +83,12 @@ async function renderVisuals(options) {
     throw new Error("DAILIES_RENDERER must be auto, zshot, or chrome");
   }
 
-  if (renderer === "chrome") {
+  const hasMedia = (options.timeline?.events || []).some((event) => event.surface === "media");
+  if (hasMedia && renderer === "zshot") {
+    throw new Error("media fixtures require the deterministic Chrome renderer");
+  }
+
+  if (renderer === "chrome" || hasMedia) {
     await renderWithChrome({
       url: options.previewUrl.replace("autoplay=1", "autoplay=0"),
       outputPath: options.capturePath,
@@ -150,6 +157,8 @@ async function writeRenderManifest(manifestPath, data) {
         sha256: await sha256File(cue.outputPath),
       };
     })),
+    media: await mediaManifestEntries(data.timeline),
+    production: await productionManifest(data.timeline),
   };
   await mkdir(path.dirname(manifestPath), { recursive: true });
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");

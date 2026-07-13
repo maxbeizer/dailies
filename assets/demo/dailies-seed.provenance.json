@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "scenario": "demos/dailies/seed.demo.md",
+  "video": "assets/demo/dailies-seed.mp4",
+  "scenarioSha256": "ad5d6c0fda01835467023dce1e6dfa5d927863cba1c1ac9242d17a3ab620917c",
+  "timelineSha256": "9e1b4a9f91a4c816c5869aca8bc8ac8d21a3e9ddd688b73b60a6c5b8e070eb3c",
+  "videoSha256": "98624bbcb2ecfcaf9c8054e93eedf457f607ef97fb70f0c81e0d55c39c71d1b3",
+  "media": [],
+  "production": null
+}
