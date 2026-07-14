@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "id": "textedit-story",
+  "platform": "macos",
+  "app": {
+    "bundleId": "com.apple.TextEdit"
+  },
+  "director": "examples/live-app-capture/textedit-director.applescript",
+  "output": "assets/captures/textedit-story.mp4",
+  "durationMs": 7000,
+  "setup": [
+    {
+      "action": "prepare",
+      "timeoutMs": 5000
+    }
+  ],
+  "actions": [
+    {
+      "atMs": 1000,
+      "action": "showOpening",
+      "timeoutMs": 3000
+    },
+    {
+      "atMs": 3500,
+      "action": "showRevision",
+      "timeoutMs": 3000
+    }
+  ],
+  "teardown": [
+    {
+      "action": "reset",
+      "timeoutMs": 5000
+    }
+  ]
+}

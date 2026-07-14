@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "id": "unordered-actions",
+  "platform": "macos",
+  "app": {
+    "bundleId": "com.apple.TextEdit"
+  },
+  "director": "examples/live-app-capture/textedit-director.applescript",
+  "output": "assets/captures/unordered-actions.mp4",
+  "durationMs": 5000,
+  "setup": [],
+  "actions": [
+    {
+      "atMs": 3000,
+      "action": "showRevision",
+      "timeoutMs": 3000
+    },
+    {
+      "atMs": 1000,
+      "action": "showOpening",
+      "timeoutMs": 3000
+    }
+  ],
+  "teardown": []
+}

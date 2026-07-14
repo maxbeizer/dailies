@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "id": "system-events-alias",
+  "platform": "macos",
+  "app": {
+    "bundleId": "com.apple.TextEdit"
+  },
+  "director": "examples/live-app-capture/invalid/system-events-alias.applescript",
+  "output": "assets/captures/system-events-alias.mp4",
+  "durationMs": 1000,
+  "setup": [],
+  "actions": [],
+  "teardown": []
+}

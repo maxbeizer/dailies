@@ -112,6 +112,15 @@ Relay command boundary:
 - Any future live execution path must use a temp database or explicit dry-run mode and must fail closed unless an allowlist and human approval are present.
 - Do not speak arbitrary terminal output, logs, secrets, file contents, or private data.
 
+Live app capture boundary:
+
+- Capture declarations and AppleScript directors are separate from scenario compilation and deterministic rendering.
+- `npm test`, `npm run check`, previews, and candidate renders must never invoke AppleScript, launch target apps, request permissions, or record the screen.
+- v1 uses native app scripting only. Reject `do shell script` and System Events UI scripting; do not request Accessibility permission.
+- Keep target bundle IDs in the committed allowlist. Adding an app or executing a capture requires explicit human approval.
+- Treat source scanning as defense in depth, not a sandbox. Human review of the director and captured take is the load-bearing control.
+- Write live candidates under ignored `artifacts/`. Promote only reviewed MP4 fixtures and provenance sidecars to `assets/captures/`.
+
 ## Agent Workflow
 
 - Make focused, reviewable slices.

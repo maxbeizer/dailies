@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "id": "traversal-director",
+  "platform": "macos",
+  "app": {
+    "bundleId": "com.apple.TextEdit"
+  },
+  "director": "../private.applescript",
+  "output": "assets/captures/traversal-director.mp4",
+  "durationMs": 1000,
+  "setup": [],
+  "actions": [],
+  "teardown": []
+}

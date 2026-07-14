@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "id": "absolute-director",
+  "platform": "macos",
+  "app": {
+    "bundleId": "com.apple.TextEdit"
+  },
+  "director": "/tmp/director.applescript",
+  "output": "assets/captures/absolute-director.mp4",
+  "durationMs": 1000,
+  "setup": [],
+  "actions": [],
+  "teardown": []
+}

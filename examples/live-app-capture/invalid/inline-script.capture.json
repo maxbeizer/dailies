@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "id": "inline-script",
+  "platform": "macos",
+  "app": {
+    "bundleId": "com.apple.TextEdit"
+  },
+  "director": "examples/live-app-capture/textedit-director.applescript",
+  "inlineScript": "tell application \"TextEdit\" to activate",
+  "output": "assets/captures/inline-script.mp4",
+  "durationMs": 1000,
+  "setup": [],
+  "actions": [],
+  "teardown": []
+}

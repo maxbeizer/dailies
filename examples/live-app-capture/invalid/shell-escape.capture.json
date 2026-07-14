@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "id": "shell-escape",
+  "platform": "macos",
+  "app": {
+    "bundleId": "com.apple.TextEdit"
+  },
+  "director": "examples/live-app-capture/invalid/shell-escape.applescript",
+  "output": "assets/captures/shell-escape.mp4",
+  "durationMs": 1000,
+  "setup": [],
+  "actions": [],
+  "teardown": []
+}

@@ -165,6 +165,14 @@ The same timeline frame therefore requests the same source frame. Interactive HT
 
 Media audio is currently muted by design. Narration is mixed separately through declared audio cues, keeping source-video playback out of the browser-capture boundary.
 
+## Live app capture specification
+
+Some demos need a real macOS application to change while it is recorded. Dailies now has an example-driven v1 declaration and validator for that future workflow.
+
+Live capture remains separate from normal rendering. A reviewed AppleScript director will eventually produce a bounded MP4 take, and ordinary Dailies productions will consume that take as a deterministic media fixture. Scenario checks, previews, and candidate renders never execute AppleScript.
+
+The current examples use TextEdit through its native AppleScript support, without Accessibility permission or network access. Execution and recording are intentionally not implemented yet. See [`docs/live-app-capture.md`](docs/live-app-capture.md) for the contract, examples, safety boundary, and deferred work.
+
 ## Audio providers
 
 Dailies keeps audio generation behind a fixture provider boundary:
@@ -236,6 +244,7 @@ See [`docs/artifacts.md`](docs/artifacts.md) for the complete policy and regener
 ## Current boundaries
 
 - Scenario terminal commands are fixture text; Dailies does not execute them.
+- Live app capture declarations are validated but not executed. Checks, previews, and renders never invoke AppleScript.
 - Media inputs are MP4 files under `assets/`.
 - Media source audio is muted.
 - Chrome is required for deterministic media capture.

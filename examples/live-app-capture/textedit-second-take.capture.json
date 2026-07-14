@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "id": "textedit-second-take",
+  "platform": "macos",
+  "app": {
+    "bundleId": "com.apple.TextEdit"
+  },
+  "director": "examples/live-app-capture/textedit-director.applescript",
+  "output": "assets/captures/textedit-second-take.mp4",
+  "durationMs": 5000,
+  "setup": [
+    {
+      "action": "prepare",
+      "timeoutMs": 5000
+    }
+  ],
+  "actions": [
+    {
+      "atMs": 750,
+      "action": "showRevision",
+      "timeoutMs": 3000
+    }
+  ],
+  "teardown": [
+    {
+      "action": "reset",
+      "timeoutMs": 5000
+    }
+  ]
+}

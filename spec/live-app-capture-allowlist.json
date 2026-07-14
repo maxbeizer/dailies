@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "allowedBundleIds": [
+    "com.apple.TextEdit"
+  ]
+}
