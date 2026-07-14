@@ -24,6 +24,10 @@ test("valid examples define repeatable TextEdit capture takes", async () => {
     director: "examples/live-app-capture/textedit-director.applescript",
     output: "assets/captures/textedit-story.mp4",
     durationMs: 7000,
+    capture: {
+      region: { x: 120, y: 120, width: 800, height: 550 },
+      framesPerSecond: 10,
+    },
     setup: [{ action: "prepare", timeoutMs: 5000 }],
     actions: [
       { atMs: 1000, action: "showOpening", timeoutMs: 3000 },
@@ -96,6 +100,10 @@ test("director symlinks cannot escape the repository", async (t) => {
       director: "directors/director.applescript",
       output: "assets/captures/symlink-escape.mp4",
       durationMs: 1000,
+      capture: {
+        region: { x: 120, y: 120, width: 800, height: 550 },
+        framesPerSecond: 10,
+      },
       setup: [],
       actions: [],
       teardown: [],
@@ -133,6 +141,10 @@ test("capture output paths cannot escape through symlinks", async (t) => {
       director: "directors/director.applescript",
       output: "assets/captures/output.mp4",
       durationMs: 1000,
+      capture: {
+        region: { x: 120, y: 120, width: 800, height: 550 },
+        framesPerSecond: 10,
+      },
       setup: [],
       actions: [],
       teardown: [],

@@ -8,6 +8,15 @@
   "director": "examples/live-app-capture/textedit-director.applescript",
   "output": "assets/captures/textedit-second-take.mp4",
   "durationMs": 5000,
+  "capture": {
+    "region": {
+      "x": 120,
+      "y": 120,
+      "width": 800,
+      "height": 550
+    },
+    "framesPerSecond": 10
+  },
   "setup": [
     {
       "action": "prepare",

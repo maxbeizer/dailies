@@ -208,6 +208,8 @@ test("full-screen media uses the stage panel contract", () => {
 test("fixture terminal commands allow only bounded Dailies npm scripts", () => {
   assert.equal(terminalCommandAllowed("relay list"), true);
   assert.equal(terminalCommandAllowed("npm run check"), true);
+  assert.equal(terminalCommandAllowed("npm run capture:live -- examples/live-app-capture/textedit-story.capture.json --approve"), true);
+  assert.equal(terminalCommandAllowed("npm run render:candidate -- demos/dailies/live-app-capture.demo.md"), true);
   assert.equal(terminalCommandAllowed("npm run render:video -- demos/dailies/inception.demo.md"), true);
   assert.equal(terminalCommandAllowed("npm exec arbitrary-package"), false);
   assert.equal(terminalCommandAllowed("npm run check && rm -rf artifacts"), false);

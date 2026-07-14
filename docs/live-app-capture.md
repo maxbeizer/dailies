@@ -1,6 +1,6 @@
 # Live app capture specification
 
-Status: v1 declarations and validation are implemented. AppleScript execution and screen recording are not.
+Status: the v1 TextEdit example can be validated, explicitly executed, reviewed, and used as a deterministic Dailies media fixture.
 
 Dailies normally builds a movie from deterministic source and fixtures. Live app capture introduces a deliberately separate step for stories that need a real macOS application to change while it is recorded.
 
@@ -44,6 +44,15 @@ The valid examples use TextEdit because its native AppleScript dictionary can cr
   "director": "examples/live-app-capture/textedit-director.applescript",
   "output": "assets/captures/textedit-story.mp4",
   "durationMs": 7000,
+  "capture": {
+    "region": {
+      "x": 120,
+      "y": 120,
+      "width": 800,
+      "height": 550
+    },
+    "framesPerSecond": 10
+  },
   "setup": [
     {
       "action": "prepare",
@@ -75,7 +84,29 @@ The valid examples use TextEdit because its native AppleScript dictionary can cr
 
 The director receives an action name and a unique run token for each invocation. The executor must generate a new unpredictable token for every capture attempt and pass the same token to setup, timed actions, and teardown. The same committed file handles every phase so the complete behavior is reviewable together.
 
-The TextEdit director marks the temporary document with that run token and looks up the matching document on later invocations. It never assumes the front document belongs to Dailies, which avoids overwriting or closing an unrelated document that was already open.
+The TextEdit director gives the temporary document a unique name derived from that run token and shows a clean `Dailies Live Capture` window title. Later invocations find the exact document by its unique name. It never assumes the front document belongs to Dailies or broadly cleans similarly named documents, which avoids overwriting or closing unrelated work.
+
+## Run the example
+
+Live execution is a separate, explicit command:
+
+```sh
+npm run capture:live -- examples/live-app-capture/textedit-story.capture.json --approve
+```
+
+The command refuses to run without `--approve` or outside macOS. It:
+
+1. Validates the declaration, allowlist, director, capture region, and output boundary.
+2. Generates a unique run token.
+3. Copies the director into an ignored read-only snapshot and validates that exact snapshot again.
+4. Runs declared setup through `osascript` using only the snapshot.
+5. Captures only the declared rectangle with native `screencapture` still frames.
+6. Applies actions at their declared output-frame times.
+7. Verifies every expected frame, encodes H.264 with `ffmpeg`, and checks the resulting frame count, duration, and dimensions.
+8. Runs teardown even after a failed take.
+9. Writes the candidate and JSON report under `artifacts/live-capture/<id>/`.
+
+Frame-stepped region capture is deliberate. It avoids recording the full display and keeps authored action times aligned with the encoded movie even when individual screenshots take longer than real time. Region coordinates and dimensions use macOS screen points; the run report records the actual output pixel dimensions because Retina scaling can produce more pixels than declared points.
 
 ## Validation and trust
 
@@ -89,6 +120,7 @@ Validation requires:
 - a director whose resolved path remains inside the repository, including through symlinks
 - an MP4 output path under `assets/captures/`
 - an output path whose existing components are not symbolic links
+- a capture rectangle with nonnegative coordinates, positive dimensions, and a positive frame rate
 - positive durations and timeouts
 - nonnegative timed actions that occur before the declared duration
 - authored action order
@@ -96,12 +128,21 @@ Validation requires:
 
 These checks are defense in depth, not an AppleScript sandbox. A committed director can still tell an allowlisted application to perform consequential work. Human review of the declaration, director, application state, and captured MP4 remains the load-bearing control.
 
-Adding an app to the allowlist or adding a live executor requires explicit human approval. A future executor should also present the exact app, director hash, action list, output path, and generated run token before each run and fail closed on any mismatch. It must repeat output containment checks immediately before opening the file and use a no-follow or exclusive-create strategy rather than trusting earlier validation across a filesystem race.
+Adding an app to the allowlist requires explicit human approval. The executor requires `--approve`, records declaration and director hashes in its ignored run report, verifies every expected frame exists, and fails closed when setup, capture, an action, encoding, or teardown fails.
 
-The validator does not try to parse AppleScript handlers or prove that every declared action exists. That consistency check belongs in the execution slice, where the executor can invoke each action against a disposable rehearsal state before recording. The execution slice must also define whether action timeouts can extend beyond the recording window.
+A `pass` report means the declared actions executed and an MP4 with the expected frame count was encoded. It cannot prove the app looked right or that another window did not overlap the declared rectangle. Human review of the take remains required before promotion.
+
+The validator does not try to parse AppleScript handlers or prove that every declared action exists. The executor discovers a missing action when `osascript` invokes it and marks the take failed.
 
 ## Capture outputs
 
-Live capture will eventually write an ignored candidate under `artifacts/` first. Only a reviewed take should be promoted to `assets/captures/*.mp4` with a provenance sidecar that follows the existing showcase convention.
+Live capture writes an ignored candidate under `artifacts/` first. Only a reviewed take should be promoted to `assets/captures/*.mp4` with a provenance sidecar.
 
-The execution command, recorder integration, provenance writer, action rehearsal, timing behavior, and promotion workflow are intentionally deferred. The examples and validator establish the contract those pieces must satisfy.
+The reviewed TextEdit take is committed as:
+
+- `assets/captures/textedit-story.mp4`
+- `assets/captures/textedit-story.provenance.json`
+
+[`demos/dailies/live-app-capture.demo.md`](../demos/dailies/live-app-capture.demo.md) uses that MP4 in the `studio-monitor` set. Normal Dailies rendering reads only the committed media fixture and never reruns AppleScript.
+
+Automatic promotion and generalized app-specific setup remain deferred. Review the candidate before copying it into `assets/captures/`.

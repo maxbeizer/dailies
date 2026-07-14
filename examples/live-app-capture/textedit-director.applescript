@@ -7,18 +7,18 @@ on run argv
 		my resetCapture(runToken)
 		tell application "TextEdit"
 			activate
-			make new document with properties {text:"Dailies can direct a running app." & return & captureMarker(runToken)}
+			if (count of documents) is 0 and (count of windows) > 0 then close window 1
+			make new document with properties {text:"Dailies can direct a running app."}
+			set name of front document to my captureDocumentName(runToken)
+			set name of front window to "Dailies Live Capture"
+			set bounds of front window to {120, 120, 920, 670}
 		end tell
 	else if actionName is "showOpening" then
 		set captureDocument to my findCaptureDocument(runToken)
-		tell application "TextEdit"
-			set text of captureDocument to "The first take starts with a real application." & return & captureMarker(runToken)
-		end tell
+		my setCaptureText(captureDocument, "The first take starts with a real application.")
 	else if actionName is "showRevision" then
 		set captureDocument to my findCaptureDocument(runToken)
-		tell application "TextEdit"
-			set text of captureDocument to "The agent changed the app, and Dailies recorded the take." & return & captureMarker(runToken)
-		end tell
+		my setCaptureText(captureDocument, "The agent changed the app, and Dailies recorded the take.")
 	else if actionName is "reset" then
 		my resetCapture(runToken)
 	else
@@ -26,23 +26,31 @@ on run argv
 	end if
 end run
 
-on captureMarker(runToken)
-	return "[dailies-live-capture:" & runToken & "]"
-end captureMarker
+on captureDocumentName(runToken)
+	return "Dailies Live Capture " & runToken
+end captureDocumentName
+
+on setCaptureText(captureDocument, visibleText)
+	tell application "TextEdit"
+		set text of captureDocument to visibleText
+	end tell
+end setCaptureText
 
 on findCaptureDocument(runToken)
+	set expectedName to my captureDocumentName(runToken)
 	tell application "TextEdit"
 		repeat with candidateDocument in documents
-			if text of candidateDocument contains my captureMarker(runToken) then return candidateDocument
+			if name of candidateDocument is expectedName then return candidateDocument
 		end repeat
 	end tell
 	error "Dailies capture document is not open"
 end findCaptureDocument
 
 on resetCapture(runToken)
+	set expectedName to my captureDocumentName(runToken)
 	tell application "TextEdit"
 		repeat with candidateDocument in documents
-			if text of candidateDocument contains my captureMarker(runToken) then
+			if name of candidateDocument is expectedName then
 				close candidateDocument saving no
 				exit repeat
 			end if

@@ -165,13 +165,20 @@ The same timeline frame therefore requests the same source frame. Interactive HT
 
 Media audio is currently muted by design. Narration is mixed separately through declared audio cues, keeping source-video playback out of the browser-capture boundary.
 
-## Live app capture specification
+## Live app capture
 
-Some demos need a real macOS application to change while it is recorded. Dailies now has an example-driven v1 declaration and validator for that future workflow.
+Some demos need a real macOS application to change while it is recorded. Dailies has an example-driven v1 workflow for directing an allowlisted app with AppleScript and capturing a reviewed MP4 take.
 
-Live capture remains separate from normal rendering. A reviewed AppleScript director will eventually produce a bounded MP4 take, and ordinary Dailies productions will consume that take as a deterministic media fixture. Scenario checks, previews, and candidate renders never execute AppleScript.
+Live capture remains separate from normal rendering. The explicit command below validates the declaration, requires approval, directs TextEdit with a unique run token, captures only the declared rectangle frame by frame, encodes an ignored MP4 candidate, and tears down the temporary document:
 
-The current examples use TextEdit through its native AppleScript support, without Accessibility permission or network access. Execution and recording are intentionally not implemented yet. See [`docs/live-app-capture.md`](docs/live-app-capture.md) for the contract, examples, safety boundary, and deferred work.
+```sh
+npm run capture:live -- examples/live-app-capture/textedit-story.capture.json --approve
+open artifacts/live-capture/textedit-story/textedit-story.mp4
+```
+
+The reviewed take is committed at `assets/captures/textedit-story.mp4` and becomes deterministic footage in [`demos/dailies/live-app-capture.demo.md`](demos/dailies/live-app-capture.demo.md).
+
+The example uses TextEdit through its native AppleScript support, without Accessibility permission or network access. Scenario checks, previews, and candidate renders never execute AppleScript. See [`docs/live-app-capture.md`](docs/live-app-capture.md) for the contract and safety boundary.
 
 ## Audio providers
 
@@ -218,6 +225,7 @@ Relay is a notification CLI used here to demonstrate editor-and-terminal stories
 | `npm test` | Run parser, compiler, evaluator, renderer-contract, and cleanup tests |
 | `npm run check` | Validate every scenario and committed showcase |
 | `npm run clean` | Remove generated artifacts and restore the placeholder |
+| `npm run capture:live -- <capture> --approve` | Direct and frame-capture one explicitly approved macOS app take |
 | `npm run compile:demo -- <scenario>` | Compile scenario source into timeline JSON |
 | `npm run render:preview -- <scenario>` | Produce a self-contained interactive HTML preview |
 | `npm run generate:audio -- <scenario>` | Generate declared narration fixtures |

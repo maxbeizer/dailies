@@ -207,7 +207,7 @@ function relayCommandsOnly(parsed) {
 export function terminalCommandAllowed(command) {
   if (containsShellControl(command)) return false;
   if (/^relay(?:\s|$)/.test(command.trim())) return true;
-  return /^npm run (?:compile:demo|render:preview|evaluate:demo|render:video|evaluate:candidate|check)(?:\s+--(?:\s|$).*)?$/.test(command.trim());
+  return /^npm run (?:capture:live|compile:demo|render:preview|evaluate:demo|render:video|render:candidate|evaluate:candidate|check)(?:\s+--(?:\s|$).*)?$/.test(command.trim());
 }
 
 function terminalCommands(parsed) {

@@ -116,9 +116,11 @@ Live app capture boundary:
 
 - Capture declarations and AppleScript directors are separate from scenario compilation and deterministic rendering.
 - `npm test`, `npm run check`, previews, and candidate renders must never invoke AppleScript, launch target apps, request permissions, or record the screen.
+- `npm run capture:live -- <capture> --approve` is the only live execution path. Keep it standalone and macOS-only.
 - v1 uses native app scripting only. Reject `do shell script` and System Events UI scripting; do not request Accessibility permission.
 - Keep target bundle IDs in the committed allowlist. Adding an app or executing a capture requires explicit human approval.
 - Treat source scanning as defense in depth, not a sandbox. Human review of the director and captured take is the load-bearing control.
+- Capture only the declared rectangle with frame-stepped still images. Do not record the full display.
 - Write live candidates under ignored `artifacts/`. Promote only reviewed MP4 fixtures and provenance sidecars to `assets/captures/`.
 
 ## Agent Workflow

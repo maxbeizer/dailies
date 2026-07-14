@@ -11,6 +11,7 @@ const TOP_LEVEL_FIELDS = new Set([
   "director",
   "output",
   "durationMs",
+  "capture",
   "setup",
   "actions",
   "teardown",
@@ -51,6 +52,7 @@ export async function validateLiveAppCapture(data, options = {}) {
     extensionMessage: "director must be an AppleScript file",
   });
   const output = await validateCaptureOutput(data.output, projectRoot);
+  const capture = data.capture === undefined ? null : validateCapture(data.capture);
 
   const setup = validateInvocations(data.setup, "setup");
   const actions = validateTimedActions(data.actions, durationMs);
@@ -81,9 +83,31 @@ export async function validateLiveAppCapture(data, options = {}) {
     director,
     output,
     durationMs,
+    ...(capture ? { capture } : {}),
     setup,
     actions,
     teardown,
+  };
+}
+
+function validateCapture(capture) {
+  if (!capture || typeof capture !== "object" || Array.isArray(capture)) {
+    throw new Error("capture must be an object");
+  }
+  rejectUnsupportedFields(capture, new Set(["region", "framesPerSecond"]), "capture");
+  const region = capture.region;
+  if (!region || typeof region !== "object" || Array.isArray(region)) {
+    throw new Error("capture region must be an object");
+  }
+  rejectUnsupportedFields(region, new Set(["x", "y", "width", "height"]), "capture region");
+  return {
+    region: {
+      x: nonnegativeInteger(region.x, "capture region x"),
+      y: nonnegativeInteger(region.y, "capture region y"),
+      width: positiveInteger(region.width, "capture region width"),
+      height: positiveInteger(region.height, "capture region height"),
+    },
+    framesPerSecond: positiveInteger(capture.framesPerSecond, "capture framesPerSecond"),
   };
 }
 

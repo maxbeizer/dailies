@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "capture": "examples/live-app-capture/textedit-story.capture.json",
+  "director": "examples/live-app-capture/textedit-director.applescript",
+  "video": "assets/captures/textedit-story.mp4",
+  "capturedAt": "2026-07-14T19:19:28Z",
+  "captureSha256": "88ef436e84bc0224fed0339d1b7b12c65ee096338776f3041f988b5a29f55d2a",
+  "directorSha256": "54e880217e7d5371b56ececb83ed1604c9f71d7cc03e6eaf3e3e807435871c5a",
+  "videoSha256": "d1f9a9485463bc80c1a2dd84952001b01645080980913cb7d69872fd0fedb29b",
+  "app": {
+    "bundleId": "com.apple.TextEdit"
+  },
+  "captureMethod": {
+    "type": "frame-stepped-region",
+    "coordinateUnit": "screen-points",
+    "region": {
+      "x": 120,
+      "y": 120,
+      "width": 800,
+      "height": 550
+    },
+    "framesPerSecond": 10,
+    "outputPixels": {
+      "width": 1600,
+      "height": 1100
+    }
+  }
+}

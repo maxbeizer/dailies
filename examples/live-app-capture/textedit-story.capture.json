@@ -8,6 +8,15 @@
   "director": "examples/live-app-capture/textedit-director.applescript",
   "output": "assets/captures/textedit-story.mp4",
   "durationMs": 7000,
+  "capture": {
+    "region": {
+      "x": 120,
+      "y": 120,
+      "width": 800,
+      "height": 550
+    },
+    "framesPerSecond": 10
+  },
   "setup": [
     {
       "action": "prepare",
