@@ -4,7 +4,7 @@ slug: dailies-inception
 set: studio-monitor
 theme: macintosh
 executionMode: fixture-only
-audioProvider: say
+audioProvider: kokoro
 maxDurationSeconds: 70
 tailHoldMs: 3000
 timeline: artifacts/dailies/inception.timeline.json
@@ -18,6 +18,7 @@ evaluation: artifacts/dailies/inception.evaluation.json
 
 ```dailies:audio-cue
 line: Director
+voice: bf_emma
 sayVoice: Samantha
 text: The first cut passed every automated check. It was still boring.
 output: artifacts/dailies/audio/directors-cut-01-review.mp3
@@ -43,6 +44,7 @@ artifacts/dailies/feature-reel.mp4
 
 ```dailies:audio-cue
 line: Production Designer
+voice: af_heart
 sayVoice: Karen
 text: Rebuild the room as a System Seven director's desk, and make every window advance the story.
 output: artifacts/dailies/audio/directors-cut-02-brief.mp3
@@ -91,6 +93,7 @@ sampled_frames=3 provenance=recorded
 
 ```dailies:audio-cue
 line: Evaluator
+voice: am_puck
 sayVoice: Daniel
 text: The movie in this window was rendered by Dailies, checked by Dailies, and committed as input to this production.
 output: artifacts/dailies/audio/directors-cut-03-recursion.mp3

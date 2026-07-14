@@ -3,7 +3,7 @@ title: Dailies feature reel
 slug: dailies-feature-reel
 set: attention-control-room
 executionMode: fixture-only
-audioProvider: say
+audioProvider: kokoro
 minSceneCount: 5
 maxDurationSeconds: 45
 timeline: artifacts/dailies/feature-reel.timeline.json
@@ -17,6 +17,7 @@ evaluation: artifacts/dailies/feature-reel.evaluation.json
 
 ```dailies:audio-cue
 line: Director
+voice: bf_emma
 sayVoice: Samantha
 text: Start with source that explains the film before a camera ever rolls.
 output: artifacts/dailies/audio/reel-01-source.mp3
@@ -63,6 +64,7 @@ mode: declared-fixture
 
 ```dailies:audio-cue
 line: Production Designer
+voice: af_heart
 sayVoice: Karen
 text: Change the set, not the workflow. The same timeline can stage a completely different room.
 output: artifacts/dailies/audio/reel-02-set.mp3
@@ -109,6 +111,7 @@ mode: declared-fixture
 
 ```dailies:audio-cue
 line: Sound
+voice: af_nova
 sayVoice: Moira
 text: Lines, voices, and offsets stay declared beside the scene, so direction remains inspectable.
 output: artifacts/dailies/audio/reel-03-audio.mp3
@@ -155,6 +158,7 @@ mode: declared-fixture
 
 ```dailies:audio-cue
 line: Camera
+voice: am_puck
 sayVoice: Daniel
 text: At every output frame, declared video seeks to the exact source time before the screenshot.
 output: artifacts/dailies/audio/reel-04-media.mp3
@@ -201,6 +205,7 @@ mode: declared-fixture
 
 ```dailies:audio-cue
 line: Evaluator
+voice: am_michael
 sayVoice: Daniel
 text: The candidate closes its own loop, and this finished film can become the next production's fixture.
 output: artifacts/dailies/audio/reel-05-evaluate.mp3

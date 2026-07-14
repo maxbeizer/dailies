@@ -176,6 +176,11 @@ test("Macintosh studio previews expose period-inspired window and transport chro
   assert.match(html, /theme-macintosh/);
   assert.match(html, /class="menu-bar"/);
   assert.match(html, /class="monitor-transport"/);
+  assert.match(html, /id="transportFill"/);
+  assert.match(html, /function mediaTransportState\(event, activeEvent, timeMs\)/);
+  assert.match(html, /elapsedMs \/ event\.durationMs/);
+  assert.match(html, /transportFill\.style\.width = \(transport\.progress \* 100\)\.toFixed\(2\) \+ "%"/);
+  assert.match(html, /formatTransportTime\(transport\.elapsedMs\) \+ " \/ " \+ formatTransportTime\(transport\.durationMs\)/);
   assert.match(html, /Dailies Director/);
   assert.match(html, /aspect-ratio:\s*16\s*\/\s*9/);
 });

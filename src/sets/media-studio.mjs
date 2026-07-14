@@ -366,8 +366,17 @@ function renderMediaStudioHtml(timeline, setName) {
     }
 
     .theme-macintosh .transport-track {
+      position: relative;
+      overflow: hidden;
       height: 8px;
       border: 1px solid #000;
+      background: #fff;
+    }
+
+    .theme-macintosh .transport-fill {
+      display: block;
+      width: 0;
+      height: 100%;
       background: repeating-linear-gradient(90deg, #000 0 2px, #fff 2px 5px);
     }
 
@@ -482,9 +491,9 @@ function renderMediaStudioHtml(timeline, setName) {
         </div>
         <div class="monitor-transport">
           <span class="transport-button">▶</span>
-          <span class="transport-track" aria-hidden="true"></span>
+          <span class="transport-track" aria-hidden="true"><span id="transportFill" class="transport-fill"></span></span>
           <span id="monitorStatus">Standby</span>
-          <span id="transportTime">00:00</span>
+          <span id="transportTime">00:00 / 00:00</span>
         </div>
       </article>
     </section>
@@ -525,6 +534,7 @@ function renderMediaStudioHtml(timeline, setName) {
     const editorWindow = document.querySelector(".surface.editor");
     const terminalWindow = document.querySelector(".surface.terminal");
     const monitorWindow = document.querySelector(".monitor-shell");
+    const transportFill = document.getElementById("transportFill");
     const transportTime = document.getElementById("transportTime");
     const params = new URLSearchParams(location.search);
     const durationMs = Math.max(timeline.durationMs || 1, 1);
@@ -556,6 +566,21 @@ function renderMediaStudioHtml(timeline, setName) {
       return Math.max(0, Math.min(1, elapsed / event.media.fadeMs, remaining / event.media.fadeMs));
     }
 
+    function formatTransportTime(timeMs) {
+      const seconds = Math.floor(Math.max(0, timeMs) / 1000);
+      return String(Math.floor(seconds / 60)).padStart(2, "0") + ":" + String(seconds % 60).padStart(2, "0");
+    }
+
+    function mediaTransportState(event, activeEvent, timeMs) {
+      if (!event) return { elapsedMs: 0, durationMs: 0, progress: 0 };
+      const elapsedMs = activeEvent ? clamp(timeMs - event.startMs, 0, event.durationMs) : event.durationMs;
+      return {
+        elapsedMs,
+        durationMs: event.durationMs,
+        progress: event.durationMs > 0 ? elapsedMs / event.durationMs : 0,
+      };
+    }
+
     function ensureSource(event) {
       const source = event ? "/" + event.media.source : "";
       if (!source || loadedSource === source) return;
@@ -579,9 +604,12 @@ function renderMediaStudioHtml(timeline, setName) {
       monitorStatus.textContent = event
         ? (lastDecodedSourceTime === null ? "Loading frame" : "Source " + lastDecodedSourceTime.toFixed(2) + "s")
         : (displayedEvent ? "Hold" : "Standby");
+      const transport = mediaTransportState(displayedEvent, event, boundedMs);
+      if (transportFill) {
+        transportFill.style.width = (transport.progress * 100).toFixed(2) + "%";
+      }
       if (transportTime) {
-        const seconds = Math.floor(boundedMs / 1000);
-        transportTime.textContent = String(Math.floor(seconds / 60)).padStart(2, "0") + ":" + String(seconds % 60).padStart(2, "0");
+        transportTime.textContent = formatTransportTime(transport.elapsedMs) + " / " + formatTransportTime(transport.durationMs);
       }
       editorWindow.classList.toggle("active-window", state.activeSurface === "editor");
       terminalWindow.classList.toggle("active-window", state.activeSurface === "terminal");
