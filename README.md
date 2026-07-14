@@ -6,9 +6,7 @@ Dailies treats Copilot like the director/operator of a demo. The agent can draft
 
 ## Watch Dailies direct itself
 
-[![Watch the Dailies Director's Cut](assets/demo/dailies-inception-poster.png)](assets/demo/dailies-inception.mp4)
-
-[Watch the Director's Cut with audio](assets/demo/dailies-inception.mp4).
+https://github.com/user-attachments/assets/ef9f423f-4677-43db-a9ba-38e5bb6b66c5
 
 ## First use case
 
