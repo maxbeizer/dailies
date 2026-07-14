@@ -4,6 +4,12 @@ Create Copilot-directed demo dailies from scenario sources, rendered editor and 
 
 Dailies treats Copilot like the director/operator of a demo. The agent can draft the scenario, compile a timeline, inspect the generated artifacts, evaluate what is missing, and keep iterating before asking for a human watch-through.
 
+## Watch Dailies direct itself
+
+<video src="assets/demo/dailies-inception.mp4" controls playsinline title="Dailies Director's Cut"></video>
+
+[Open the Director's Cut directly](assets/demo/dailies-inception.mp4) if the player is unavailable.
+
 ## First use case
 
 The first demo target is Relay CLI in action:
@@ -42,7 +48,7 @@ npm run render:candidate -- demos/tsrs/live-mode.demo.md --provider say
 npm run render:candidate -- demos/tsrs/prune-before-ready.demo.md --provider say
 npm run render:candidate -- demos/tsrs/line-voices.demo.md --provider kokoro
 npm run render:candidate -- demos/tsrs/provider-boundary.demo.md --provider kokoro
-DAILIES_RENDERER=chrome npm run render:candidate -- demos/dailies/inception.demo.md --provider say
+DAILIES_RENDERER=chrome npm run render:candidate -- demos/dailies/inception.demo.md
 ```
 
 The default check is intentionally offline and dependency-free. It parses each scenario under `demos/`, compiles a timeline JSON artifact, renders a self-contained HTML preview, and evaluates each scenario against the first self-review gates. `render:video` is opt-in because it needs either local ZShot or Google Chrome plus ffmpeg.
@@ -153,7 +159,7 @@ These controls are intentionally smaller than a generic timeline, track, plugin,
 
 `demos/dailies/inception.demo.md` uses that Dailies-produced film across three source windows inside a System 7-inspired director's desk. The outer story opens by rejecting the boring first cut, shows the revised production proof, and ends with the inner film becoming the next fixture.
 
-The director's cut also demonstrates audible voice direction with distinct installed macOS voices for the Director, Production Designer, and Evaluator roles.
+The director's cut also demonstrates audible voice direction with distinct Kokoro voices generated through the local, non-speaking TSRS provider boundary.
 
 The rendered showcase is committed at [`assets/demo/dailies-inception.mp4`](assets/demo/dailies-inception.mp4), so the recursive result is watchable without rebuilding the toolchain.
 
