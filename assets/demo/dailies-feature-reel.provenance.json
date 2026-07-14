@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "scenario": "demos/dailies/feature-reel.demo.md",
+  "video": "assets/demo/dailies-feature-reel.mp4",
+  "scenarioSha256": "366e026c2b41eb3a204d6692d9a4f9defd34a71d64868eabd64333786c3d9092",
+  "timelineSha256": "67b015c8a9334644a011e780d18f13447c0bf24e9f0776b6fb419c25fb595c63",
+  "videoSha256": "ec1f14ddf34b179935cd865a8b26ae3ecfdab897381c73947e9eb098e56bac4c",
+  "media": [],
+  "production": null
+}

@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "scenario": "demos/dailies/inception.demo.md",
+  "video": "assets/demo/dailies-inception.mp4",
+  "scenarioSha256": "80f992e731099dd7450715679833ed180e5bbfc819904b53ea100f2a6f27802e",
+  "timelineSha256": "03c9b589f53efdf0b606a53e647159cc041e9fe530f90073dd5756c5abbf9e7f",
+  "videoSha256": "636e6a52f593a0fc5a9fefcee4bc507e94f612a73d6ba0e2c2c61bd0b8d9d557",
+  "media": [
+    {
+      "source": "assets/demo/dailies-feature-reel.mp4",
+      "startMs": 10800,
+      "sourceOffsetMs": 0,
+      "durationMs": 9000,
+      "configSha256": "1c017c831606694ac22b51523a51aaee6aaca85c95f428ccbb19cfa17e44cbe7",
+      "sha256": "ec1f14ddf34b179935cd865a8b26ae3ecfdab897381c73947e9eb098e56bac4c"
+    },
+    {
+      "source": "assets/demo/dailies-feature-reel.mp4",
+      "startMs": 24400,
+      "sourceOffsetMs": 9000,
+      "durationMs": 10000,
+      "configSha256": "d1d4be3d7656d4864ca887470200cd6f4331003c084f39dad87337e80f6a7871",
+      "sha256": "ec1f14ddf34b179935cd865a8b26ae3ecfdab897381c73947e9eb098e56bac4c"
+    },
+    {
+      "source": "assets/demo/dailies-feature-reel.mp4",
+      "startMs": 38000,
+      "sourceOffsetMs": 19000,
+      "durationMs": 14000,
+      "configSha256": "f3841de1ee6ea5710533c839302a02eb8a2731d395ef49d6581091b6b723ff3b",
+      "sha256": "ec1f14ddf34b179935cd865a8b26ae3ecfdab897381c73947e9eb098e56bac4c"
+    }
+  ],
+  "production": {
+    "theme": "macintosh",
+    "background": null
+  }
+}

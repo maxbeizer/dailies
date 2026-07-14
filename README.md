@@ -27,9 +27,6 @@ Current Relay demos:
 - `demos/tsrs/line-voices.demo.md`: Line identity moves from text labels into distinct Kokoro voice ids.
 - `demos/tsrs/provider-boundary.demo.md`: Kokoro is configured through the provider boundary while TSRS still owns playback.
 
-
-
-
 ## Commands
 
 ```sh
