@@ -71,6 +71,15 @@ The monitor shows set design and audio direction.
 The authored source stays visible beside it.
 ```
 
+```dailies:audio-cue
+line: Production Designer
+voice: af_heart
+sayVoice: Karen
+text: Here the set changes without changing the workflow. Speakers, voices, offsets, and fixture fingerprints stay declared, while candidate evaluation proves that every layer still agrees.
+output: artifacts/dailies/audio/directors-cut-03-inspection.mp3
+mode: declared-fixture
+```
+
 ```dailies:media
 type: video
 source: assets/demo/dailies-feature-reel.mp4
@@ -95,8 +104,8 @@ sampled_frames=3 provenance=recorded
 line: Evaluator
 voice: am_puck
 sayVoice: Daniel
-text: The movie in this window was rendered by Dailies, checked by Dailies, and committed as input to this production.
-output: artifacts/dailies/audio/directors-cut-03-recursion.mp3
+text: The movie in this window was rendered by Dailies, checked by Dailies, and committed as input to this production. Every frame seeks the same source time, so the finished output can safely become the next input.
+output: artifacts/dailies/audio/directors-cut-04-recursion.mp3
 mode: declared-fixture
 ```
 
@@ -111,6 +120,15 @@ audio: muted
 transition: fade
 fadeMs: 350
 caption: ACT III — Seek, decode, evaluate, hash, then turn the finished movie into the next fixture.
+```
+
+```dailies:audio-cue
+line: Director
+voice: bf_emma
+sayVoice: Samantha
+text: The output becomes the next input. The proof stays visible beside the film, and Dailies directs the next version of itself.
+output: artifacts/dailies/audio/directors-cut-05-payoff.mp3
+mode: declared-fixture
 ```
 
 ```dailies:editor
