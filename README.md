@@ -1,204 +1,249 @@
 # Dailies
 
-Create Copilot-directed demo dailies from scenario sources, rendered editor and terminal performances, Relay CLI actions, generated audio fixtures, browser-friendly video exports, and self-review artifacts that let the agent decide when a candidate is ready for human feedback.
+**A source-driven, agent-directed studio for making deterministic demo videos.**
 
-Dailies treats Copilot like the director/operator of a demo. The agent can draft the scenario, compile a timeline, inspect the generated artifacts, evaluate what is missing, and keep iterating before asking for a human watch-through.
+Dailies turns readable Markdown scenarios into timelines, browser previews, narrated MP4s, and review artifacts. Instead of editing tracks by hand, you direct scenes, sets, voices, commands, and media fixtures in source that people and agents can inspect together.
 
 ## Watch Dailies direct itself
 
+The Director's Cut is a recursive production: Dailies renders a five-act feature reel, places that finished movie inside a System 7-inspired studio, and uses it as source footage for the next Dailies video.
+
+> [!IMPORTANT]
+> 🔊 **PRESS PLAY, THEN CLICK THE SPEAKER BUTTON. GitHub starts the narration muted.**
+
 https://github.com/user-attachments/assets/ef9f423f-4677-43db-a9ba-38e5bb6b66c5
 
-## First use case
+This one film demonstrates named sets, multiple Kokoro voices, deterministic video fixtures, synchronized player transport, captions, evaluation, provenance, and the finished output becoming the next production's input.
 
-The first demo target is Relay CLI in action:
+## What Dailies is
 
-1. An editor surface shows the user writing Markdown narration for the scenario.
-2. A terminal surface shows the same user typing and running `relay` commands.
-3. Audio cues are declared as fixtures and can later be generated through the non-speaking TSRS Kokoro or Speechify wrappers.
-4. The agent reviews source, timeline, audio declarations, generated artifacts, and evaluation reports before asking for feedback.
+Dailies is designed for demos that should be:
 
-Current Relay demos:
+- **Directed in source:** story, timing, narration, commands, and media remain reviewable
+- **Agent-friendly:** an agent can draft, render, evaluate, and refine a candidate before asking for human feedback
+- **Deterministic:** declared media maps to exact source frames instead of depending on real-time browser playback
+- **Fixture-first:** terminal actions and audio are production inputs, not hidden live side effects
+- **Composable:** one timeline can move between editor, terminal, control-room, studio-monitor, and full-screen sets
+- **Self-reviewing:** manifests, hashes, frame samples, duration rules, and scenario assertions catch stale or incomplete candidates
 
-- `demos/tsrs/queue.demo.md`: Focus mode queues updates until the user asks for one.
-- `demos/tsrs/live-mode.demo.md`: Live mode plays updates automatically while Mute remains the safety override.
-- `demos/tsrs/prune-before-ready.demo.md`: Skip stale work and clear a noisy line before releasing one useful update.
-- `demos/tsrs/line-voices.demo.md`: Line identity moves from text labels into distinct Kokoro voice ids.
-- `demos/tsrs/provider-boundary.demo.md`: Kokoro is configured through the provider boundary while TSRS still owns playback.
+Dailies is intentionally not a general-purpose nonlinear editor. Its production language stays small enough to understand, diff, regenerate, and automate.
 
-## Commands
+## Quick start
+
+Requirements:
+
+- Node.js 22 or newer
+- Google Chrome for video rendering
+- `ffmpeg` and `ffprobe` for MP4 candidates and media validation
+- macOS `say` or an explicitly configured audio provider for generated narration
 
 ```sh
+git clone https://github.com/jonmagic/dailies.git
+cd dailies
+
 npm test
-npm run clean
-npm run compile:demo -- demos/tsrs/queue.demo.md
-npm run generate:audio -- demos/tsrs/queue.demo.md --provider say
-npm run render:preview -- demos/tsrs/queue.demo.md
-npm run evaluate:demo -- demos/tsrs/queue.demo.md
 npm run check
-npm run render:video -- demos/tsrs/queue.demo.md
-npm run evaluate:candidate -- demos/tsrs/queue.demo.md
-npm run render:candidate -- demos/tsrs/queue.demo.md --provider kokoro
+```
+
+The default checks are offline and dependency-free. They parse every scenario, compile its timeline, render a self-contained HTML preview, validate source contracts, and verify committed showcase provenance.
+
+Render an interactive preview:
+
+```sh
+npm run render:preview -- demos/dailies/inception.demo.md
+open artifacts/dailies/inception.preview.html
+```
+
+Render a complete local candidate:
+
+```sh
 npm run render:candidate -- demos/tsrs/queue.demo.md --provider say
-npm run render:candidate -- demos/tsrs/live-mode.demo.md --provider say
-npm run render:candidate -- demos/tsrs/prune-before-ready.demo.md --provider say
-npm run render:candidate -- demos/tsrs/line-voices.demo.md --provider kokoro
-npm run render:candidate -- demos/tsrs/provider-boundary.demo.md --provider kokoro
-DAILIES_RENDERER=chrome npm run render:candidate -- demos/dailies/inception.demo.md
 ```
 
-The default check is intentionally offline and dependency-free. It parses each scenario under `demos/`, compiles a timeline JSON artifact, renders a self-contained HTML preview, and evaluates each scenario against the first self-review gates. `render:video` is opt-in because it needs either local ZShot or Google Chrome plus ffmpeg.
+The candidate loop compiles the timeline, renders the preview, evaluates the scenario, generates declared audio fixtures, captures the MP4, samples frames, and evaluates the final video.
 
-`render:candidate` is the full local candidate loop: compile, preview, evaluate the demo source, generate audio fixtures, render MP4, and run the candidate gate.
+## Author a production
 
-Terminal command output appears instantly once a command finishes; only user-authored editor text and terminal commands are typed out.
-
-`npm run clean` removes generated files under `artifacts/` and restores the tracked placeholder. Authored scenarios and committed fixtures under `assets/` are never cleanup targets.
-
-## Sets and scenes
-
-The default set remains the original editor plus terminal stage. A scenario can select another built-in set with frontmatter:
-
-```yaml
-set: attention-control-room
-audioProvider: kokoro
-maxDurationSeconds: 120
-```
-
-The attention control room consumes explicit JSON scene blocks. Put one or more audio cues immediately before the scene they belong to. `offsetMs` is relative to that following scene, and at least one cue must begin at offset `0`:
+A scenario is Markdown with production frontmatter and fenced Dailies blocks:
 
 ````markdown
+---
+title: Product launch
+slug: product-launch
+set: studio-monitor
+theme: macintosh
+executionMode: fixture-only
+audioProvider: say
+timeline: artifacts/product-launch/timeline.json
+preview: artifacts/product-launch/preview.html
+video: artifacts/product-launch/video.mp4
+renderManifest: artifacts/product-launch/render.json
+evaluation: artifacts/product-launch/evaluation.json
+---
+
+# Product launch
+
 ```dailies:audio-cue
-line: Narrator
-text: Five workspaces are active at once.
-output: artifacts/scenes/audio/five-workspaces.mp3
+line: Director
+sayVoice: Samantha
+text: Start with the source, then show the finished product.
+output: artifacts/product-launch/audio/opening.mp3
 mode: declared-fixture
 ```
 
-```dailies:audio-cue
-line: Operator
-text: Route the next decision.
-offsetMs: 4500
-output: artifacts/scenes/audio/route-decision.mp3
-mode: declared-fixture
+```dailies:editor
+# The plan
+
+Explain the change.
+Show the proof.
+End with the result.
 ```
 
-```dailies:scene
-{
-  "id": "five-workspaces",
-  "durationMs": 10000,
-  "clock": "08:19",
-  "headline": "Five workspaces overlap.",
-  "body": "The foreground moves while bounded agents continue in parallel."
-}
+```dailies:terminal
+$ npm run check
+status=pass
 ```
-````
 
-Scene data is validated before compilation. Audio cues are bound to the following scene and compilation fails if an offset starts outside that scene. Actual generated cue durations are checked again during candidate evaluation. The control-room renderer supports `kicker`, `camera`, `accent`, `concurrency`, `foreground`, `lanes`, and `metrics` in addition to the required fields above.
-
-Ledger scenes use `layout: ledger`. Their compact `ledger` entries declare `id`, `time`, `source`, `text`, and a scene-relative `offsetMs`. Entries from every scene are merged into one timeline-global stream, so prior activity remains visible after the headline or focus changes. Audio cues can join the same stream with `showInLedger: true`, `ledgerTime`, and `ledgerSource`; the active dialogue row expands while ambient activity stays visible.
-
-Ledger `counters` are authored cumulative snapshots and must never move backwards across scenes. `maxAudioGapMs` adds a candidate-time pacing gate based on actual generated audio duration, including the final tail.
-
-## Media fixtures and studio sets
-
-Pre-existing MP4 video is a declared timeline fixture:
-
-````markdown
 ```dailies:media
 type: video
 source: assets/demo/dailies-seed.mp4
 panel: monitor
-offsetMs: 0
 sourceOffsetMs: 0
-durationMs: 11000
-fit: cover
+durationMs: 8000
+fit: contain
 audio: muted
 transition: fade
-fadeMs: 500
-caption: A Dailies-rendered film inside a Dailies-rendered film.
+fadeMs: 350
+caption: The previous Dailies output becomes this production's input.
 ```
 ````
 
-Media paths must be repository-relative, remain under `assets/`, and point to MP4 files. Source evaluation checks path safety and existence without adding npm dependencies. When `ffprobe` is available it also checks the requested source window; candidate evaluation requires that check.
-
-Media audio is deliberately muted in the first contract. Narration still uses normal `dailies:audio-cue` fixtures and ffmpeg mixing. A future source-audio mode can enter through that same explicit mixing boundary rather than browser capture.
-
-Built-in sets:
-
-- `editor-terminal`: the original source and fixture-command stage
-- `attention-control-room`: scene-driven productions
-- `studio-monitor`: source and command panels beside a program monitor
-- `full-screen-media`: the declared media feed as the primary stage
-
-`studio-monitor` fixtures target `panel: monitor`; `full-screen-media` fixtures target `panel: stage`. Media and production controls fail closed on sets that do not render them.
-
-Media timelines always use the Chrome renderer. Before capture, ffmpeg extracts the exact declared source windows at the capture frame rate. Chrome receives the matching image for each timeline frame, draws it into the set canvas, and only then takes the screenshot. This avoids depending on real-time browser playback or headless-video seek behavior.
-
-Interactive HTML previews still use the browser's local video element, while final Chrome capture uses extracted frames as the source of truth.
-
-Lightweight production controls stay source-driven:
-
-- `theme: dark`, `cinema`, `light`, or `macintosh`
-- optional `background: assets/...` image
-- `panel: monitor` or `stage`
-- `fit: contain` or `cover`
-- `transition: cut` or `fade`
-- optional `caption`
-- optional `tailHoldMs` to leave the completed final state on screen
-
-These controls are intentionally smaller than a generic timeline, track, plugin, or drag-and-drop editing system.
-
-## The recursive public demo
-
-`demos/dailies/feature-reel.demo.md` renders a five-act film showing source compilation, named sets, audio direction, deterministic media, evaluation, and the recursive production loop. A reviewed copy is committed as `assets/demo/dailies-feature-reel.mp4`.
-
-`demos/dailies/inception.demo.md` uses that Dailies-produced film across three source windows inside a System 7-inspired director's desk. The outer story opens by rejecting the boring first cut, shows the revised production proof, and ends with the inner film becoming the next fixture.
-
-The director's cut also demonstrates audible voice direction with distinct Kokoro voices generated through the local, non-speaking TSRS provider boundary.
-
-The rendered showcase is committed at [`assets/demo/dailies-inception.mp4`](assets/demo/dailies-inception.mp4), so the recursive result is watchable without rebuilding the toolchain.
-
-Committed showcase movies are not regenerated in CI because MP4 bytes can vary across ffmpeg versions. See `docs/artifacts.md` for the deliberate regeneration workflow.
-
-Committed showcase provenance is deterministic even when MP4 generation is not. `npm run check` verifies the scenario, compiled timeline, input fixture, and output video hashes recorded beside each showcase.
-
-## Video renderers
-
-`render:video` uses `DAILIES_RENDERER=auto` by default. Auto tries ZShot first and falls back to dependency-free Chrome DevTools capture when ZShot is missing or unavailable. Scenarios with `dailies:media` bypass ZShot and require Chrome so deterministic seeking remains enforced.
+Save the scenario as `demos/product-launch.demo.md`, then compile and preview it:
 
 ```sh
-DAILIES_RENDERER=zshot npm run render:video -- demos/tsrs/queue.demo.md
+npm run compile:demo -- demos/product-launch.demo.md
+npm run render:preview -- demos/product-launch.demo.md
+npm run evaluate:demo -- demos/product-launch.demo.md
 ```
 
-Set `CHROME_PATH` when Chrome is not installed at the standard macOS application path. `DAILIES_CHROME_FPS` controls the Chrome capture rate before ffmpeg produces the 30 fps H.264 output; the default is 12 fps for mostly static Dailies sets.
+## Production language
 
+| Block | Purpose |
+| --- | --- |
+| `dailies:editor` | Types authored source into the editor surface |
+| `dailies:terminal` | Stages terminal commands and fixture output |
+| `dailies:audio-cue` | Declares a speaker, voice, text, timing, and generated audio fixture |
+| `dailies:scene` | Directs a structured control-room scene |
+| `dailies:media` | Places a deterministic MP4 source window into a supported panel |
+| `dailies:self-review` | Declares artifacts and candidate checks that must pass |
 
-Generated artifacts for each demo follow the scenario frontmatter. The first two demos write:
+Audio cues immediately before a scene belong to that scene. Their `offsetMs` values are scene-relative, and compilation fails if a cue would migrate into a later scene. Media paths must be repository-relative MP4 files under `assets/`.
 
-- `artifacts/tsrs/queue.timeline.json`
-- `artifacts/tsrs/queue.preview.html`
-- `artifacts/tsrs/queue.evaluation.json`
-- `artifacts/tsrs/queue.mp4` when `npm run render:video` succeeds
-- `artifacts/tsrs/live-mode.timeline.json`
-- `artifacts/tsrs/live-mode.preview.html`
-- `artifacts/tsrs/live-mode.evaluation.json`
-- `artifacts/tsrs/live-mode.mp4` when `npm run render:video` succeeds
-- `artifacts/tsrs/prune-before-ready.timeline.json`
-- `artifacts/tsrs/prune-before-ready.preview.html`
-- `artifacts/tsrs/prune-before-ready.evaluation.json`
-- `artifacts/tsrs/prune-before-ready.mp4` when `npm run render:video` succeeds
-- `artifacts/<demo-group>/frames/<demo>/*.webp` compact candidate-review frame samples
+## Built-in sets
 
-Generated artifacts stay ignored. Deliberate reusable fixtures live under `assets/`; the complete policy is in `docs/artifacts.md`.
+| Set | Best for |
+| --- | --- |
+| `editor-terminal` | Source authoring and command-line demos |
+| `attention-control-room` | Structured stories with lanes, metrics, dialogue, and activity ledgers |
+| `studio-monitor` | Source and commands beside a 16:9 program monitor |
+| `full-screen-media` | Declared video as the primary stage |
 
-Use `--provider kokoro` with `generate:audio` when real local Kokoro fixture generation is intended and the optional TSRS Kokoro venv is already installed. A scenario can instead pin `audioProvider` in frontmatter; generation uses that provider automatically and rejects conflicting CLI overrides. Generated fixture sidecars bind each audio file to its text, provider, voice, and speed so stale audio cannot be reused after a cue configuration change. Set `TSRS_KOKORO_HELPER` to the non-speaking TSRS wrapper path when the sibling `../tri-state-relay-service/scripts/kokoro-voice-command` helper is not available. Use `--provider speechify` only when real Speechify fixture generation is intended and local credentials are already configured. Set `TSRS_SPEECHIFY_HELPER` to the non-speaking TSRS wrapper path, or put a compatible `speechify` command on `PATH`. The default development path can use the local macOS `say` voice so the video has an audio cue without touching a paid/network provider.
+Studio productions can select `dark`, `cinema`, `light`, or `macintosh` themes and control media fit, fades, captions, backgrounds, and final-state holds from source.
 
-## Agent harness
+## Deterministic video fixtures
 
-Start with `AGENTS.md` for repository instructions. Project-specific skills live under `.github/skills/` when a repeated workflow earns one.
+Declared media does not play freely while Chrome captures the screen. Dailies:
 
-## Contributing and license
+1. Validates the repository-relative asset path and requested source window.
+2. Uses `ffprobe` to confirm the source can satisfy the declaration.
+3. Extracts the exact source window at the capture frame rate with `ffmpeg`.
+4. Maps each timeline time to a specific extracted frame.
+5. Injects that frame into the browser set before taking the screenshot.
+6. Records source, configuration, production, audio, timeline, and output hashes.
 
-Dailies is licensed under the ISC License. See `CONTRIBUTING.md` for the fixture-first development workflow and `SECURITY.md` for private vulnerability-reporting guidance.
+The same timeline frame therefore requests the same source frame. Interactive HTML previews still use the browser video element, while final Chrome capture uses extracted frames as the source of truth.
 
-The package remains `"private": true` to prevent accidental npm publication. Open source distribution is repository-first; no npm package or remote publication is required by the current release floor.
+Media audio is currently muted by design. Narration is mixed separately through declared audio cues, keeping source-video playback out of the browser-capture boundary.
+
+## Audio providers
+
+Dailies keeps audio generation behind a fixture provider boundary:
+
+- `say`: local macOS speech for the simplest development path
+- `kokoro`: richer local voices through a compatible non-speaking wrapper
+- `speechify`: optional networked generation through a compatible wrapper
+
+Scenario frontmatter can pin `audioProvider`. Cue sidecars fingerprint the text, provider, voice, and speed so stale narration cannot be reused after direction changes.
+
+Kokoro and Speechify require compatible wrapper commands. Set `TSRS_KOKORO_HELPER` or `TSRS_SPEECHIFY_HELPER` to their executable paths when they are not available through the default local integration. The Director's Cut pins Kokoro, so regenerating its narration requires that helper; watching, previewing, and validating the committed showcase does not.
+
+Provider wrappers generate files; they never speak directly. Live playback, paid providers, credentials, and external side effects remain opt-in.
+
+## Example productions
+
+### Dailies Director's Cut
+
+[`demos/dailies/inception.demo.md`](demos/dailies/inception.demo.md) is the outer System 7-inspired production shown above. It uses three windows from a Dailies-generated feature reel and distinct Director, Production Designer, and Evaluator voices.
+
+### Dailies feature reel
+
+[`demos/dailies/feature-reel.demo.md`](demos/dailies/feature-reel.demo.md) is the five-act inner film. It demonstrates source compilation, named sets, audio direction, deterministic media, evaluation, and recursive production.
+
+### Recursive seed
+
+[`demos/dailies/seed.demo.md`](demos/dailies/seed.demo.md) preserves the smaller proof that a Dailies output can become a committed media fixture for another Dailies production.
+
+### Relay CLI
+
+Relay is a notification CLI used here to demonstrate editor-and-terminal stories, queued updates, mute controls, pruning stale work, and voice identity. The original Dailies suite includes:
+
+- [`queue.demo.md`](demos/tsrs/queue.demo.md)
+- [`live-mode.demo.md`](demos/tsrs/live-mode.demo.md)
+- [`prune-before-ready.demo.md`](demos/tsrs/prune-before-ready.demo.md)
+- [`line-voices.demo.md`](demos/tsrs/line-voices.demo.md)
+- [`provider-boundary.demo.md`](demos/tsrs/provider-boundary.demo.md)
+
+## Commands
+
+| Command | Result |
+| --- | --- |
+| `npm test` | Run parser, compiler, evaluator, renderer-contract, and cleanup tests |
+| `npm run check` | Validate every scenario and committed showcase |
+| `npm run clean` | Remove generated artifacts and restore the placeholder |
+| `npm run compile:demo -- <scenario>` | Compile scenario source into timeline JSON |
+| `npm run render:preview -- <scenario>` | Produce a self-contained interactive HTML preview |
+| `npm run generate:audio -- <scenario>` | Generate declared narration fixtures |
+| `npm run evaluate:demo -- <scenario>` | Validate source and preview contracts |
+| `npm run render:video -- <scenario>` | Capture and mix the MP4 |
+| `npm run evaluate:candidate -- <scenario>` | Validate the rendered video and sample frames |
+| `npm run render:candidate -- <scenario>` | Run the complete local production loop |
+
+`render:video` uses `DAILIES_RENDERER=auto` by default. It tries local ZShot first and falls back to Chrome DevTools capture. Scenarios containing `dailies:media` always use Chrome so deterministic frame injection remains enforced.
+
+> [!TIP]
+> [ZShot](https://zshot-app.com/) is an optional power-up for fast local browser capture, diagnostics, and additional output formats. Dailies still works with its Chrome fallback, and media-fixture productions always use Chrome for deterministic frame injection.
+
+Set `CHROME_PATH` when Chrome is installed outside its standard location. `DAILIES_CHROME_FPS` controls capture cadence before `ffmpeg` produces the 30 fps H.264 output.
+
+## Artifacts and provenance
+
+Authored scenarios and reusable fixtures live under `demos/` and `assets/`. Generated timelines, previews, audio, manifests, sampled frames, and candidate movies live under ignored `artifacts/`.
+
+Reviewed showcase MP4s are committed deliberately. Their neighboring provenance files let `npm run check` verify scenario, timeline, media, production, and output hashes without pretending MP4 bytes are reproducible across every `ffmpeg` version.
+
+See [`docs/artifacts.md`](docs/artifacts.md) for the complete policy and regeneration workflow.
+
+## Current boundaries
+
+- Scenario terminal commands are fixture text; Dailies does not execute them.
+- Media inputs are MP4 files under `assets/`.
+- Media source audio is muted.
+- Chrome is required for deterministic media capture.
+- Narrated candidates require an available audio provider.
+- The package remains private to prevent accidental npm publication; distribution is repository-first.
+
+These constraints keep the default workflow inspectable, local, and safe while the studio language evolves.
+
+## Contributing
+
+Dailies is licensed under the ISC License. Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) for the fixture-first development workflow, [`AGENTS.md`](AGENTS.md) for repository guidance, and [`SECURITY.md`](SECURITY.md) for private vulnerability reporting.
