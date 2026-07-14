@@ -95,6 +95,7 @@ async function renderVisuals(options) {
       durationSeconds: options.durationSeconds,
       width: 1280,
       height: 720,
+      timeline: options.timeline,
     });
     return;
   }
@@ -128,6 +129,7 @@ async function renderVisuals(options) {
       durationSeconds: options.durationSeconds,
       width: 1280,
       height: 720,
+      timeline: options.timeline,
     });
   }
 }

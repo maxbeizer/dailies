@@ -131,28 +131,33 @@ Built-in sets:
 
 `studio-monitor` fixtures target `panel: monitor`; `full-screen-media` fixtures target `panel: stage`. Media and production controls fail closed on sets that do not render them.
 
-Media timelines always use the Chrome renderer. For every captured frame, Dailies seeks the hidden source video to `sourceOffsetMs + elapsedTimelineMs`, waits for `seeked`, draws the decoded frame into a canvas, and only then takes the screenshot. This avoids depending on real-time browser playback.
+Media timelines always use the Chrome renderer. Before capture, ffmpeg extracts the exact declared source windows at the capture frame rate. Chrome receives the matching image for each timeline frame, draws it into the set canvas, and only then takes the screenshot. This avoids depending on real-time browser playback or headless-video seek behavior.
+
+Interactive HTML previews still use the browser's local video element, while final Chrome capture uses extracted frames as the source of truth.
 
 Lightweight production controls stay source-driven:
 
-- `theme: dark`, `cinema`, or `light`
+- `theme: dark`, `cinema`, `light`, or `macintosh`
 - optional `background: assets/...` image
 - `panel: monitor` or `stage`
 - `fit: contain` or `cover`
 - `transition: cut` or `fade`
 - optional `caption`
+- optional `tailHoldMs` to leave the completed final state on screen
 
 These controls are intentionally smaller than a generic timeline, track, plugin, or drag-and-drop editing system.
 
 ## The recursive public demo
 
-`demos/dailies/seed.demo.md` renders a short Dailies film. A reviewed copy is committed as `assets/demo/dailies-seed.mp4`.
+`demos/dailies/feature-reel.demo.md` renders a five-act film showing source compilation, named sets, audio direction, deterministic media, evaluation, and the recursive production loop. A reviewed copy is committed as `assets/demo/dailies-feature-reel.mp4`.
 
-`demos/dailies/inception.demo.md` then uses that Dailies-produced MP4 as its declared program-monitor input. The outer film shows Dailies authoring and checking the scenario while the inner Dailies film plays inside it.
+`demos/dailies/inception.demo.md` uses that Dailies-produced film across three source windows inside a System 7-inspired director's desk. The outer story opens by rejecting the boring first cut, shows the revised production proof, and ends with the inner film becoming the next fixture.
+
+The director's cut also demonstrates audible voice direction with distinct installed macOS voices for the Director, Production Designer, and Evaluator roles.
 
 The rendered showcase is committed at [`assets/demo/dailies-inception.mp4`](assets/demo/dailies-inception.mp4), so the recursive result is watchable without rebuilding the toolchain.
 
-The committed seed is not regenerated in CI because MP4 bytes can vary across ffmpeg versions. See `docs/artifacts.md` for the deliberate regeneration workflow.
+Committed showcase movies are not regenerated in CI because MP4 bytes can vary across ffmpeg versions. See `docs/artifacts.md` for the deliberate regeneration workflow.
 
 Committed showcase provenance is deterministic even when MP4 generation is not. `npm run check` verifies the scenario, compiled timeline, input fixture, and output video hashes recorded beside each showcase.
 

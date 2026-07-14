@@ -115,6 +115,12 @@ export function compileTimeline(parsed) {
     }
   }
 
+  const tailHoldMs = parsed.frontmatter.tailHoldMs ?? 0;
+  if (!Number.isInteger(tailHoldMs) || tailHoldMs < 0 || tailHoldMs > 60000) {
+    throw new Error("tailHoldMs must be an integer from 0 to 60000");
+  }
+  cursorMs += tailHoldMs;
+
   const timeline = {
     version: 1,
     sourcePath: path.relative(PROJECT_ROOT, parsed.sourcePath),
@@ -125,6 +131,10 @@ export function compileTimeline(parsed) {
     events,
     selfReview: parsed.blocks.find((block) => block.type === "self-review")?.data || null,
   };
+
+  if (tailHoldMs > 0) {
+    timeline.tailHoldMs = tailHoldMs;
+  }
 
   if (parsed.frontmatter.set) {
     if (!SUPPORTED_SET_NAMES.includes(parsed.frontmatter.set)) {

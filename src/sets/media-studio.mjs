@@ -110,6 +110,10 @@ function renderMediaStudioHtml(timeline, setName) {
     .monitor {
       position: relative;
       min-height: 0;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      align-self: center;
       display: grid;
       place-items: center;
       overflow: hidden;
@@ -128,9 +132,10 @@ function renderMediaStudioHtml(timeline, setName) {
     }
     #mediaSource {
       position: absolute;
-      width: 1px;
-      height: 1px;
-      opacity: 0;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.001;
       pointer-events: none;
     }
     .standby {
@@ -203,31 +208,293 @@ function renderMediaStudioHtml(timeline, setName) {
       font-weight: 850;
     }
     input[type="range"] { width: 420px; }
+
+    .menu-bar,
+    .desktop-strip,
+    .monitor-transport {
+      display: none;
+    }
+
+    body.theme-macintosh {
+      color: #000;
+      background:
+        linear-gradient(45deg, #8c8c8c 25%, transparent 25%, transparent 75%, #8c8c8c 75%),
+        linear-gradient(45deg, #8c8c8c 25%, #b8b8b8 25%, #b8b8b8 75%, #8c8c8c 75%);
+      background-position: 0 0, 2px 2px;
+      background-size: 4px 4px;
+      font-family: Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    #stage.theme-macintosh {
+      padding: 0;
+      grid-template-rows: 24px minmax(0, 1fr) 28px 10px;
+      gap: 0;
+      color: #000;
+      background: #bdbdbd;
+      border: 2px solid #000;
+      box-shadow: 8px 8px 0 #000;
+    }
+
+    .theme-macintosh .menu-bar {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 0 10px;
+      border-bottom: 2px solid #000;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 22px;
+    }
+
+    .theme-macintosh .system-mark {
+      font-weight: 900;
+      font-size: 11px;
+    }
+
+    .theme-macintosh .studio {
+      min-height: 0;
+      grid-template-columns: 392px minmax(0, 1fr);
+      gap: 18px;
+      padding: 16px 18px 12px;
+      background:
+        linear-gradient(45deg, rgba(0, 0, 0, 0.07) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.07) 75%),
+        #bdbdbd;
+      background-position: 0 0, 2px 2px;
+      background-size: 4px 4px;
+    }
+
+    .theme-macintosh .workbench {
+      grid-template-rows: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .theme-macintosh .surface,
+    .theme-macintosh .monitor-shell {
+      border: 2px solid #000;
+      border-radius: 0;
+      background: #fff;
+      box-shadow: 5px 5px 0 #000;
+      transition: transform 120ms steps(2), box-shadow 120ms steps(2);
+    }
+
+    .theme-macintosh .surface.active-window,
+    .theme-macintosh .monitor-shell.active-window {
+      transform: translate(-2px, -2px);
+      box-shadow: 7px 7px 0 #000;
+    }
+
+    .theme-macintosh .surface-header,
+    .theme-macintosh .monitor-header {
+      position: relative;
+      height: 27px;
+      padding: 0 28px;
+      justify-content: center;
+      color: #000;
+      border-bottom: 2px solid #000;
+      background: repeating-linear-gradient(to bottom, #000 0 1px, #fff 1px 3px);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .theme-macintosh .window-title {
+      padding: 1px 7px 2px;
+      background: #fff;
+    }
+
+    .theme-macintosh .window-control {
+      position: absolute;
+      left: 6px;
+      top: 6px;
+      width: 13px;
+      height: 13px;
+      padding: 0;
+      border: 1px solid #000;
+      background: #fff;
+      box-shadow: inset 0 0 0 2px #d8d8d8;
+    }
+
+    .theme-macintosh .surface-body {
+      height: calc(100% - 27px);
+      padding: 14px 15px;
+      color: #000;
+      background: #fff;
+      font: 13px/1.42 Monaco, "SF Mono", ui-monospace, monospace;
+    }
+
+    .theme-macintosh .terminal .surface-body {
+      color: #000;
+      background:
+        linear-gradient(90deg, transparent 0 15px, rgba(0,0,0,0.08) 15px 16px, transparent 16px),
+        #fff;
+    }
+
+    .theme-macintosh .monitor-shell {
+      grid-template-rows: 27px minmax(0, 1fr) 34px;
+      padding: 0;
+    }
+
+    .theme-macintosh .monitor {
+      width: calc(100% - 22px);
+      border: 2px solid #000;
+      background: #000;
+      box-shadow: inset 0 0 0 3px #fff;
+    }
+
+    .theme-macintosh .monitor-transport {
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      gap: 10px;
+      align-items: center;
+      padding: 0 10px;
+      border-top: 2px solid #000;
+      background: #dedede;
+      font: 11px Monaco, "SF Mono", monospace;
+    }
+
+    .theme-macintosh .transport-button {
+      width: 18px;
+      height: 18px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #000;
+      background: #fff;
+      box-shadow: 1px 1px 0 #000;
+      font-size: 9px;
+    }
+
+    .theme-macintosh .transport-track {
+      height: 8px;
+      border: 1px solid #000;
+      background: repeating-linear-gradient(90deg, #000 0 2px, #fff 2px 5px);
+    }
+
+    .theme-macintosh .standby {
+      color: #fff;
+      font: 12px Monaco, "SF Mono", monospace;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .theme-macintosh .caption {
+      left: 14px;
+      right: 14px;
+      bottom: 12px;
+      padding: 8px 10px;
+      border: 2px solid #000;
+      border-left-width: 8px;
+      border-radius: 0;
+      background: #fff;
+      color: #000;
+      box-shadow: 3px 3px 0 #000;
+      font: 700 14px/1.3 Geneva, "Helvetica Neue", sans-serif;
+    }
+
+    .theme-macintosh .cue {
+      top: 46px;
+      right: 38px;
+      max-width: 430px;
+      padding: 12px 15px;
+      border: 2px solid #000;
+      border-radius: 0;
+      background: #fff;
+      color: #000;
+      box-shadow: 5px 5px 0 #000;
+      font: 700 13px/1.35 Geneva, "Helvetica Neue", sans-serif;
+    }
+
+    .theme-macintosh .desktop-strip {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 0 18px;
+      border-top: 2px solid #000;
+      background: #bdbdbd;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .theme-macintosh .desktop-icon::before {
+      content: "";
+      display: inline-block;
+      width: 12px;
+      height: 10px;
+      margin-right: 6px;
+      vertical-align: -1px;
+      border: 1px solid #000;
+      background: #fff;
+      box-shadow: inset 0 3px 0 #000;
+    }
+
+    .theme-macintosh .timeline {
+      height: 10px;
+      border-radius: 0;
+      border-top: 2px solid #000;
+      background: #fff;
+    }
+
+    .theme-macintosh #timelineFill {
+      background: repeating-linear-gradient(90deg, #000 0 6px, #fff 6px 9px);
+    }
+
+    body.theme-macintosh .controls {
+      border: 2px solid #000;
+      border-radius: 0;
+      background: #fff;
+      box-shadow: 4px 4px 0 #000;
+    }
+
+    body.theme-macintosh button {
+      border: 1px solid #000;
+      border-radius: 0;
+      color: #000;
+      background: #fff;
+      box-shadow: 2px 2px 0 #000;
+    }
   </style>
 </head>
-<body>
-  <main id="stage" data-dailies-set="${setName}" aria-label="Dailies media studio">
+<body class="theme-${theme}">
+  <main id="stage" class="theme-${theme}" data-dailies-set="${setName}" aria-label="Dailies media studio">
+    <nav class="menu-bar" aria-label="Dailies Director menu">
+      <span class="system-mark">◆</span>
+      <span>File</span><span>Edit</span><span>View</span><span>Set</span><span>Render</span><span>Special</span>
+    </nav>
     <section class="studio">
       <div class="workbench">
         <article class="surface editor" data-surface="editor">
-          <div class="surface-header"><span>Scenario source</span><span>Dailies</span></div>
+          <div class="surface-header"><span class="window-control" aria-hidden="true"></span><span class="window-title">Scenario Source</span></div>
           <div id="editorText" class="surface-body"></div>
         </article>
         <article class="surface terminal" data-surface="terminal">
-          <div class="surface-header"><span>Fixture commands</span><span>Offline</span></div>
+          <div class="surface-header"><span class="window-control" aria-hidden="true"></span><span class="window-title">Fixture Commands</span></div>
           <div id="terminalText" class="surface-body"></div>
         </article>
       </div>
       <article class="monitor-shell" data-surface="media">
-        <div class="monitor-header"><span>Program monitor</span><span id="monitorStatus">Standby</span></div>
+        <div class="monitor-header"><span class="window-control" aria-hidden="true"></span><span class="window-title">Dailies Player</span></div>
         <div class="monitor">
-          <div id="standby" class="standby">Waiting for declared media</div>
+          <div id="standby" class="standby">Program reel not loaded</div>
           <video id="mediaSource" muted playsinline preload="auto"></video>
           <canvas id="mediaMonitor" width="1280" height="720"></canvas>
           <div id="mediaCaption" class="caption"></div>
         </div>
+        <div class="monitor-transport">
+          <span class="transport-button">▶</span>
+          <span class="transport-track" aria-hidden="true"></span>
+          <span id="monitorStatus">Standby</span>
+          <span id="transportTime">00:00</span>
+        </div>
       </article>
     </section>
+    <div class="desktop-strip" aria-label="Production artifacts">
+      <span class="desktop-icon">Scenario</span>
+      <span class="desktop-icon">Timeline</span>
+      <span class="desktop-icon">Audio</span>
+      <span class="desktop-icon">Manifest</span>
+      <span class="desktop-icon">Movie</span>
+    </div>
     <aside id="cueCard" class="cue"></aside>
     <div class="timeline"><div id="timelineFill"></div></div>
   </main>
@@ -255,10 +522,16 @@ function renderMediaStudioHtml(timeline, setName) {
     const restart = document.getElementById("restart");
     const scrub = document.getElementById("scrub");
     const controls = document.getElementById("controls");
+    const editorWindow = document.querySelector(".surface.editor");
+    const terminalWindow = document.querySelector(".surface.terminal");
+    const monitorWindow = document.querySelector(".monitor-shell");
+    const transportTime = document.getElementById("transportTime");
     const params = new URLSearchParams(location.search);
     const durationMs = Math.max(timeline.durationMs || 1, 1);
     const mediaEvents = (timeline.events || []).filter((event) => event.surface === "media");
     let loadedSource = "";
+    let lastDecodedSourceTime = null;
+    window.__dailiesInjectedMediaFrame = null;
     let interactiveSeek = null;
     let pendingInteractiveFrame = null;
     let playing = params.get("autoplay") === "1";
@@ -270,6 +543,10 @@ function renderMediaStudioHtml(timeline, setName) {
 
     function activeMediaEvent(timeMs) {
       return mediaEvents.find((event) => timeMs >= event.startMs && timeMs < event.startMs + event.durationMs) || null;
+    }
+
+    function latestMediaEvent(timeMs) {
+      return [...mediaEvents].reverse().find((event) => timeMs >= event.startMs) || null;
     }
 
     function mediaOpacity(event, timeMs) {
@@ -291,15 +568,26 @@ function renderMediaStudioHtml(timeline, setName) {
       const boundedMs = clamp(timeMs, 0, durationMs);
       const state = renderDailiesState(timeline, boundedMs);
       editorText.textContent = state.editorText;
+      editorText.scrollTop = editorText.scrollHeight;
       terminalText.textContent = state.terminalEntries.map((entry) => (entry.kind === "command" ? "$ " : "") + entry.text).join("\\n\\n");
       const event = activeMediaEvent(boundedMs);
-      ensureSource(event);
-      const opacity = mediaOpacity(event, boundedMs);
+      const displayedEvent = event || latestMediaEvent(boundedMs);
+      ensureSource(displayedEvent);
+      const opacity = event ? mediaOpacity(event, boundedMs) : (displayedEvent ? 1 : 0);
       mediaMonitor.style.opacity = String(opacity);
-      standby.style.opacity = event ? "0" : "1";
-      monitorStatus.textContent = event ? "Playing declared fixture" : "Standby";
-      mediaCaption.textContent = event?.media.caption || "";
-      mediaCaption.style.opacity = event?.media.caption ? String(opacity) : "0";
+      standby.style.opacity = displayedEvent ? "0" : "1";
+      monitorStatus.textContent = event
+        ? (lastDecodedSourceTime === null ? "Loading frame" : "Source " + lastDecodedSourceTime.toFixed(2) + "s")
+        : (displayedEvent ? "Hold" : "Standby");
+      if (transportTime) {
+        const seconds = Math.floor(boundedMs / 1000);
+        transportTime.textContent = String(Math.floor(seconds / 60)).padStart(2, "0") + ":" + String(seconds % 60).padStart(2, "0");
+      }
+      editorWindow.classList.toggle("active-window", state.activeSurface === "editor");
+      terminalWindow.classList.toggle("active-window", state.activeSurface === "terminal");
+      monitorWindow.classList.toggle("active-window", Boolean(event));
+      mediaCaption.textContent = displayedEvent?.media.caption || "";
+      mediaCaption.style.opacity = displayedEvent?.media.caption ? String(opacity) : "0";
       if (state.audioCue) {
         cueCard.classList.add("visible");
         cueCard.textContent = (state.audioCue.cue.line || "Narrator") + ": " + (state.audioCue.cue.text || "");
@@ -335,18 +623,56 @@ function renderMediaStudioHtml(timeline, setName) {
       const requestedSeconds = (event.media.sourceOffsetMs + (timeMs - event.startMs)) / 1000;
       const maxSeconds = Math.max(0, (mediaSource.duration || requestedSeconds) - 0.001);
       const targetSeconds = Math.min(requestedSeconds, maxSeconds);
+      let sought = false;
       if (Math.abs(mediaSource.currentTime - targetSeconds) > 0.005) {
-        const seeked = waitForEvent(mediaSource, "seeked");
+        mediaSource.pause();
         mediaSource.currentTime = targetSeconds;
-        await seeked;
+        sought = true;
       }
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      drawMediaFrame(event);
+      if (sought && typeof mediaSource.requestVideoFrameCallback === "function") {
+        await playDecodedFrame(event, targetSeconds);
+      } else {
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const frame = await createImageBitmap(mediaSource);
+        lastDecodedSourceTime = mediaSource.currentTime;
+        drawMediaFrame(event, frame);
+        frame.close();
+      }
     }
 
-    function drawMediaFrame(event) {
-      const sourceWidth = mediaSource.videoWidth;
-      const sourceHeight = mediaSource.videoHeight;
+    async function playDecodedFrame(event, targetSeconds) {
+      await mediaSource.play();
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          mediaSource.pause();
+          reject(new Error("timed out waiting for decoded video frame"));
+        }, 5000);
+        const onFrame = async (_now, metadata) => {
+          if (metadata.mediaTime + 0.03 < targetSeconds) {
+            mediaSource.requestVideoFrameCallback(onFrame);
+            return;
+          }
+          try {
+            const frame = await createImageBitmap(mediaSource);
+            clearTimeout(timeout);
+            lastDecodedSourceTime = metadata.mediaTime;
+            drawMediaFrame(event, frame);
+            frame.close();
+            mediaSource.pause();
+            resolve();
+          } catch (error) {
+            clearTimeout(timeout);
+            mediaSource.pause();
+            reject(error);
+          }
+        };
+        mediaSource.requestVideoFrameCallback(onFrame);
+      });
+    }
+
+    function drawMediaFrame(event, frame) {
+      const sourceWidth = frame.width;
+      const sourceHeight = frame.height;
       if (!sourceWidth || !sourceHeight) {
         throw new Error("decoded video frame has no dimensions");
       }
@@ -361,7 +687,7 @@ function renderMediaStudioHtml(timeline, setName) {
       const y = (targetHeight - height) / 2;
       mediaContext.fillStyle = "#000";
       mediaContext.fillRect(0, 0, targetWidth, targetHeight);
-      mediaContext.drawImage(mediaSource, x, y, width, height);
+      mediaContext.drawImage(frame, x, y, width, height);
     }
 
     function scheduleInteractiveSeek(event, timeMs) {
@@ -384,13 +710,31 @@ function renderMediaStudioHtml(timeline, setName) {
         });
     }
 
+    window.__dailiesSetMediaFrame = (dataUrl, sourceTimeMs) => new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => {
+        window.__dailiesInjectedMediaFrame = { image, sourceTimeMs };
+        resolve(true);
+      };
+      image.onerror = () => reject(new Error("failed to load injected media frame"));
+      image.src = dataUrl;
+    });
+
     window.__dailiesPrepareFrame = async (timeMs) => {
       currentMs = clamp(timeMs, 0, durationMs);
       startedAtMs = currentMs;
       startTimestamp = 0;
       playing = false;
       const event = draw(currentMs);
-      await seekMedia(event, currentMs);
+      const injected = window.__dailiesInjectedMediaFrame;
+      window.__dailiesInjectedMediaFrame = null;
+      if (event && injected) {
+        lastDecodedSourceTime = injected.sourceTimeMs / 1000;
+        drawMediaFrame(event, injected.image);
+        monitorStatus.textContent = "Source " + lastDecodedSourceTime.toFixed(2) + "s";
+      } else {
+        await seekMedia(event, currentMs);
+      }
       await new Promise((resolve) => requestAnimationFrame(() => resolve(true)));
       return true;
     };

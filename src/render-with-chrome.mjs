@@ -1,10 +1,12 @@
 import { spawn } from "node:child_process";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { createServer as createNetServer } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const DEFAULT_CHROME_PATH = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 export async function renderWithChrome(options) {
   const chromePath = options.chromePath || process.env.CHROME_PATH || DEFAULT_CHROME_PATH;
@@ -14,6 +16,7 @@ export async function renderWithChrome(options) {
   const profileDir = path.join(workspace, "profile");
   const port = await availablePort();
   const frameCount = Math.max(1, Math.ceil(options.durationSeconds * captureFps));
+  const mediaCaptures = await prepareMediaCaptures(options.timeline, workspace, captureFps);
   let browser;
   let cdp;
 
@@ -36,7 +39,8 @@ export async function renderWithChrome(options) {
 
     for (let index = 0; index < frameCount; index += 1) {
       const timeMs = Math.min(options.durationSeconds * 1000, (index / captureFps) * 1000);
-      await drawAt(cdp, timeMs);
+      const mediaFrame = await mediaFrameDataAt(mediaCaptures, timeMs, captureFps);
+      await drawAt(cdp, timeMs, mediaFrame);
       const screenshot = await cdp.send("Page.captureScreenshot", {
         format: "jpeg",
         quality: 92,
@@ -60,6 +64,74 @@ export async function renderWithChrome(options) {
     }
     await rm(workspace, { recursive: true, force: true });
   }
+}
+
+export function mediaFrameRequestAt(timeline, timeMs, captureFps) {
+  const mediaEvents = (timeline?.events || []).filter((event) => event.surface === "media");
+  const eventIndex = mediaEvents.findIndex((event) => timeMs >= event.startMs && timeMs < event.startMs + event.durationMs);
+  if (eventIndex === -1) return null;
+  const event = mediaEvents[eventIndex];
+  const elapsedMs = timeMs - event.startMs;
+  return {
+    eventIndex,
+    frameNumber: Math.floor((elapsedMs / 1000) * captureFps) + 1,
+    sourceTimeMs: event.media.sourceOffsetMs + elapsedMs,
+  };
+}
+
+export function clampMediaFrameNumber(frameNumber, extractedFrameCount) {
+  if (!Number.isInteger(extractedFrameCount) || extractedFrameCount < 1) {
+    throw new Error("media extraction produced no frames");
+  }
+  return Math.max(1, Math.min(frameNumber, extractedFrameCount));
+}
+
+async function prepareMediaCaptures(timeline, workspace, captureFps) {
+  const mediaEvents = (timeline?.events || []).filter((event) => event.surface === "media");
+  const captures = [];
+  for (let eventIndex = 0; eventIndex < mediaEvents.length; eventIndex += 1) {
+    const event = mediaEvents[eventIndex];
+    const frameDir = path.join(workspace, `media-${eventIndex}`);
+    await mkdir(frameDir, { recursive: true });
+    await run("ffmpeg", [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-y",
+      "-i",
+      path.join(PROJECT_ROOT, event.media.source),
+      "-ss",
+      String(event.media.sourceOffsetMs / 1000),
+      "-t",
+      String(event.durationMs / 1000),
+      "-vf",
+      `fps=${captureFps}`,
+      "-q:v",
+      "2",
+      path.join(frameDir, "frame-%06d.jpg"),
+    ]);
+    const frameFiles = (await readdir(frameDir))
+      .filter((file) => /^frame-\d{6}\.jpg$/.test(file))
+      .sort();
+    if (frameFiles.length === 0) {
+      throw new Error(`media extraction produced no frames for ${event.media.source}`);
+    }
+    captures.push({ event, frameDir, frameFiles });
+  }
+  return captures;
+}
+
+async function mediaFrameDataAt(captures, timeMs, captureFps) {
+  const timeline = { events: captures.map((capture) => capture.event) };
+  const request = mediaFrameRequestAt(timeline, timeMs, captureFps);
+  if (!request) return null;
+  const capture = captures[request.eventIndex];
+  const frameNumber = clampMediaFrameNumber(request.frameNumber, capture.frameFiles.length);
+  const framePath = path.join(capture.frameDir, capture.frameFiles[frameNumber - 1]);
+  return {
+    dataUrl: `data:image/jpeg;base64,${(await readFile(framePath)).toString("base64")}`,
+    sourceTimeMs: request.sourceTimeMs,
+  };
 }
 
 function launchChrome(chromePath, port, profileDir, url) {
@@ -208,13 +280,17 @@ async function waitForPreviewReady(cdp) {
   throw new Error("Dailies preview did not expose its draw function");
 }
 
-async function drawAt(cdp, timeMs) {
+async function drawAt(cdp, timeMs, mediaFrame) {
+  const injectedFrame = mediaFrame
+    ? `await window.__dailiesSetMediaFrame(${JSON.stringify(mediaFrame.dataUrl)}, ${Math.round(mediaFrame.sourceTimeMs)});`
+    : "window.__dailiesInjectedMediaFrame = null;";
   const result = await cdp.send("Runtime.evaluate", {
     expression: `(async () => {
       currentMs = ${Math.round(timeMs)};
       startedAtMs = currentMs;
       startTimestamp = 0;
       playing = false;
+      ${injectedFrame}
       if (typeof window.__dailiesPrepareFrame === "function") {
         await window.__dailiesPrepareFrame(currentMs);
       } else {

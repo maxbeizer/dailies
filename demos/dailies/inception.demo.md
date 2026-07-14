@@ -1,10 +1,12 @@
 ---
-title: Dailies directs itself
+title: Dailies Director's Cut
 slug: dailies-inception
 set: studio-monitor
-theme: cinema
+theme: macintosh
 executionMode: fixture-only
-maxDurationSeconds: 30
+audioProvider: say
+maxDurationSeconds: 70
+tailHoldMs: 3000
 timeline: artifacts/dailies/inception.timeline.json
 preview: artifacts/dailies/inception.preview.html
 video: artifacts/dailies/inception.mp4
@@ -12,54 +14,110 @@ renderManifest: artifacts/dailies/inception.render.json
 evaluation: artifacts/dailies/inception.evaluation.json
 ---
 
-# Dailies directs itself
+# Dailies Director's Cut
 
 ```dailies:audio-cue
-line: Narrator
-text: Dailies is a source-driven studio. The agent writes the production, checks it, and renders the film.
-output: artifacts/dailies/audio/inception-opening.mp3
+line: Director
+sayVoice: Samantha
+text: The first cut passed every automated check. It was still boring.
+output: artifacts/dailies/audio/directors-cut-01-review.mp3
 mode: declared-fixture
 ```
 
 ```dailies:editor
-# Build the studio with the studio
+# First cut review
 
-Declare a video fixture:
+It worked. It passed. It was boring.
 
-type: video
-source: assets/demo/dailies-seed.mp4
-panel: monitor
-audio: muted
-
-The source MP4 was rendered by Dailies from another checked scenario.
+New brief: System 7. Exact 16:9 movie window.
+Every claimed feature must be visible.
 ```
 
 ```dailies:terminal
 $ npm run check
-pass: deterministic source and preview gates
-
-$ npm run render:video -- demos/dailies/inception.demo.md
-artifacts/dailies/inception.mp4
+25 checks passed
+creative review failed: weak framing, short story, no payoff
+$ npm run render:video -- demos/dailies/feature-reel.demo.md
+artifacts/dailies/feature-reel.mp4
 ```
 
 ```dailies:audio-cue
-line: Narrator
-text: Now the earlier Dailies film becomes the program feed inside this Dailies film.
-output: artifacts/dailies/audio/inception-monitor.mp3
+line: Production Designer
+sayVoice: Karen
+text: Rebuild the room as a System Seven director's desk, and make every window advance the story.
+output: artifacts/dailies/audio/directors-cut-02-brief.mp3
 mode: declared-fixture
 ```
 
 ```dailies:media
 type: video
-source: assets/demo/dailies-seed.mp4
+source: assets/demo/dailies-feature-reel.mp4
 panel: monitor
 sourceOffsetMs: 0
-durationMs: 11000
-fit: cover
+durationMs: 9000
+fit: contain
 audio: muted
 transition: fade
-fadeMs: 500
-caption: A Dailies-rendered film, playing inside a Dailies-rendered film.
+fadeMs: 350
+caption: ACT I — Readable source becomes an explicit timeline and a named set.
+```
+
+```dailies:editor
+# The reel does the explaining
+
+The monitor shows set design and audio direction.
+The authored source stays visible beside it.
+```
+
+```dailies:media
+type: video
+source: assets/demo/dailies-feature-reel.mp4
+panel: monitor
+sourceOffsetMs: 9000
+durationMs: 10000
+fit: contain
+audio: muted
+transition: fade
+fadeMs: 350
+caption: ACT II — Sets, speakers, voices, offsets, and fixture fingerprints stay inspectable.
+```
+
+```dailies:terminal
+$ npm run evaluate:candidate -- demos/dailies/feature-reel.demo.md
+status=pass
+timeline=current audio=current media=current
+sampled_frames=3 provenance=recorded
+```
+
+```dailies:audio-cue
+line: Evaluator
+sayVoice: Daniel
+text: The movie in this window was rendered by Dailies, checked by Dailies, and committed as input to this production.
+output: artifacts/dailies/audio/directors-cut-03-recursion.mp3
+mode: declared-fixture
+```
+
+```dailies:media
+type: video
+source: assets/demo/dailies-feature-reel.mp4
+panel: monitor
+sourceOffsetMs: 19000
+durationMs: 14000
+fit: contain
+audio: muted
+transition: fade
+fadeMs: 350
+caption: ACT III — Seek, decode, evaluate, hash, then turn the finished movie into the next fixture.
+```
+
+```dailies:editor
+# The recursive payoff
+
+The output becomes the next input.
+The proof is visible beside the film.
+
+Dailies does not just record a demo.
+It directs the next version of itself.
 ```
 
 ```dailies:self-review
@@ -71,10 +129,11 @@ caption: A Dailies-rendered film, playing inside a Dailies-rendered film.
   "checks": [
     "editor_surface_present",
     "terminal_surface_present",
+    "media_blocks_present",
+    "timeline_within_declared_limit",
+    "terminal_outputs_instant",
     "relay_commands_only",
     "fixture_only_execution",
-    "timeline_under_25_seconds",
-    "terminal_outputs_instant",
     "audio_cues_declared",
     "media_sources_exist",
     "no_obvious_secrets_or_private_paths"
@@ -84,6 +143,7 @@ caption: A Dailies-rendered film, playing inside a Dailies-rendered film.
     "manifest_matches_current_timeline",
     "manifest_matches_video",
     "manifest_matches_media",
+    "manifest_matches_production",
     "media_source_windows_valid",
     "audio_fixtures_match_cue_config",
     "video_is_1280x720",

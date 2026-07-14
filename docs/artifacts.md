@@ -8,6 +8,7 @@ Dailies separates authored production inputs from generated review outputs.
 - Reusable visual and media fixtures under `assets/`
 - Source code, tests, scripts, and documentation
 - Deliberate public sample media, such as `assets/demo/dailies-seed.mp4`
+- Purpose-built program reels, such as `assets/demo/dailies-feature-reel.mp4`
 - Deliberate rendered showcases, such as `assets/demo/dailies-inception.mp4`
 - Empty `.gitkeep` placeholders
 
@@ -31,11 +32,13 @@ Run `npm run clean` to remove generated artifacts and restore `artifacts/.gitkee
 
 ## Regenerating the recursive demo fixture
 
-`assets/demo/dailies-seed.mp4` is intentionally a Dailies-produced film used as input to `demos/dailies/inception.demo.md`.
+`assets/demo/dailies-seed.mp4` preserves the original recursive proof. `assets/demo/dailies-feature-reel.mp4` is the purpose-built program reel used by `demos/dailies/inception.demo.md`.
 
 ```sh
 DAILIES_RENDERER=chrome npm run render:candidate -- demos/dailies/seed.demo.md --provider say
 cp artifacts/dailies/seed.mp4 assets/demo/dailies-seed.mp4
+DAILIES_RENDERER=chrome npm run render:candidate -- demos/dailies/feature-reel.demo.md --provider say
+cp artifacts/dailies/feature-reel.mp4 assets/demo/dailies-feature-reel.mp4
 DAILIES_RENDERER=chrome npm run render:candidate -- demos/dailies/inception.demo.md --provider say
 cp artifacts/dailies/inception.mp4 assets/demo/dailies-inception.mp4
 npm run refresh:showcases

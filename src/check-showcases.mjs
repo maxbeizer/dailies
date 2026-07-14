@@ -14,6 +14,11 @@ const SHOWCASES = [
     provenance: "assets/demo/dailies-seed.provenance.json",
   },
   {
+    scenario: "demos/dailies/feature-reel.demo.md",
+    video: "assets/demo/dailies-feature-reel.mp4",
+    provenance: "assets/demo/dailies-feature-reel.provenance.json",
+  },
+  {
     scenario: "demos/dailies/inception.demo.md",
     video: "assets/demo/dailies-inception.mp4",
     provenance: "assets/demo/dailies-inception.provenance.json",

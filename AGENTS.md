@@ -90,7 +90,7 @@ Media fixture boundary:
 
 - `dailies:media` currently supports muted MP4 files under repository-relative `assets/` paths.
 - Validate source paths and requested source windows before treating a candidate as current.
-- Media timelines must use Chrome capture. Seek each source explicitly, wait for the seek, draw the decoded frame into a canvas, and only then capture the Dailies frame.
+- Media timelines must use Chrome capture. Pre-extract declared source windows with ffmpeg, inject the exact image for each timeline frame, draw it into the set canvas, and only then capture the Dailies frame.
 - Record media source hashes and configuration fingerprints in render manifests so changed fixtures make old candidates stale.
 - Record theme and background-asset hashes too; production controls are part of candidate freshness.
 - Keep committed sample media small and deliberate. Generated videos remain under ignored `artifacts/`.

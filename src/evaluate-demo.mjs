@@ -23,6 +23,13 @@ const SECRET_PATTERNS = [
 
 const ALLOWED_AUDIO_PROVIDERS = new Set(["say", "speechify", "kokoro"]);
 const ATTENTION_CONTROL_ROOM_SET = "attention-control-room";
+const MEDIA_SETS = new Set(["studio-monitor", "full-screen-media"]);
+
+export function demoDurationLimitSeconds(set, frontmatter) {
+  if (set === ATTENTION_CONTROL_ROOM_SET) return Number(frontmatter.maxDurationSeconds || 120);
+  if (MEDIA_SETS.has(set)) return Number(frontmatter.maxDurationSeconds || 60);
+  return 25;
+}
 
 export async function evaluateDemo(sourcePath) {
   const absoluteSourcePath = path.resolve(sourcePath);
@@ -34,7 +41,7 @@ export async function evaluateDemo(sourcePath) {
   const expectedTimeline = compileTimeline(parsed);
   const checks = [];
   const set = parsed.frontmatter.set || "editor-terminal";
-  const maxDurationSeconds = Number(parsed.frontmatter.maxDurationSeconds || (set === ATTENTION_CONTROL_ROOM_SET ? 120 : 25));
+  const maxDurationSeconds = demoDurationLimitSeconds(set, parsed.frontmatter);
 
   if (set === ATTENTION_CONTROL_ROOM_SET) {
     const minSceneCount = Number(parsed.frontmatter.minSceneCount || 8);
@@ -50,6 +57,15 @@ export async function evaluateDemo(sourcePath) {
       check(checks, "ledger_activity_present", ledgerActivityCount(parsed) >= minLedgerEntries, `ledger declares at least ${minLedgerEntries} activity entries`);
     }
     check(checks, "timeline_within_declared_limit", expectedTimeline.durationMs <= maxDurationSeconds * 1000, `compiled timeline stays under ${maxDurationSeconds} seconds`);
+  } else if (MEDIA_SETS.has(set)) {
+    if (set === "studio-monitor") {
+      check(checks, "editor_surface_present", parsed.blocks.some((block) => block.type === "editor"), "scenario has a dailies:editor block");
+      check(checks, "terminal_surface_present", parsed.blocks.some((block) => block.type === "terminal"), "scenario has a dailies:terminal block");
+    }
+    check(checks, "media_blocks_present", parsed.blocks.some((block) => block.type === "media"), "scenario has at least one dailies:media block");
+    check(checks, "timeline_within_declared_limit", expectedTimeline.durationMs <= maxDurationSeconds * 1000, `compiled timeline stays under ${maxDurationSeconds} seconds`);
+    check(checks, "terminal_outputs_instant", terminalOutputsInstant(expectedTimeline), "terminal output events render fully as soon as they start");
+    check(checks, "audio_cues_do_not_linger", audioCuesDoNotLinger(expectedTimeline), "audio cue overlays disappear after the active cue window");
   } else {
     check(checks, "editor_surface_present", parsed.blocks.some((block) => block.type === "editor"), "scenario has a dailies:editor block");
     check(checks, "terminal_surface_present", parsed.blocks.some((block) => block.type === "terminal"), "scenario has a dailies:terminal block");

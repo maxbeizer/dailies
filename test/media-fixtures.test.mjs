@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { compileTimeline } from "../src/compile-timeline.mjs";
-import { terminalCommandAllowed } from "../src/evaluate-demo.mjs";
+import { demoDurationLimitSeconds, terminalCommandAllowed } from "../src/evaluate-demo.mjs";
 import { mediaConfigFingerprint, validateMediaData } from "../src/media-fixtures.mjs";
 import { parseDemoMarkdown } from "../src/parse-demo.mjs";
 import { renderPreviewHtml } from "../src/render-preview.mjs";
+import { clampMediaFrameNumber, mediaFrameRequestAt } from "../src/render-with-chrome.mjs";
 import { supportedSetNames } from "../src/sets/index.mjs";
 
 const MEDIA_SOURCE = `---
@@ -60,6 +61,23 @@ test("media blocks parse and compile into deterministic timeline events", () => 
   });
 });
 
+test("media studio demos support the System 7-inspired theme and longer declared stories", () => {
+  const parsed = parseDemoMarkdown(
+    "/repo/demos/dailies/directors-cut.demo.md",
+    MEDIA_SOURCE
+      .replace("theme: cinema", "theme: macintosh")
+      .replace("executionMode: fixture-only", "executionMode: fixture-only\nmaxDurationSeconds: 60\ntailHoldMs: 3000"),
+  );
+  const timeline = compileTimeline(parsed);
+
+  assert.equal(timeline.production.theme, "macintosh");
+  assert.equal(timeline.tailHoldMs, 3000);
+  assert.equal(timeline.durationMs, 12200);
+  assert.equal(demoDurationLimitSeconds("studio-monitor", parsed.frontmatter), 60);
+  assert.equal(demoDurationLimitSeconds("full-screen-media", {}), 60);
+  assert.equal(demoDurationLimitSeconds("editor-terminal", { maxDurationSeconds: 60 }), 25);
+});
+
 test("media validation fails closed for unsafe or unsupported declarations", () => {
   assert.throws(() => validateMediaData({
     type: "video",
@@ -112,7 +130,6 @@ test("media fingerprints bind source configuration", () => {
     sourceOffsetMs: 2000,
     durationMs: 4000,
   });
-
   assert.notEqual(
     mediaConfigFingerprint(media),
     mediaConfigFingerprint({ ...media, sourceOffsetMs: 2500 }),
@@ -121,6 +138,20 @@ test("media fingerprints bind source configuration", () => {
     mediaConfigFingerprint(media),
     mediaConfigFingerprint({ ...media, fit: "cover" }),
   );
+});
+
+test("Chrome capture maps timeline time to exact extracted media frames", () => {
+  const timeline = compileTimeline(parseDemoMarkdown("/repo/demos/dailies/inception.demo.md", MEDIA_SOURCE));
+  const request = mediaFrameRequestAt(timeline, 5000, 12);
+
+  assert.deepEqual(request, {
+    eventIndex: 0,
+    frameNumber: 46,
+    sourceTimeMs: 8800,
+  });
+  assert.equal(mediaFrameRequestAt(timeline, 1000, 12), null);
+  assert.equal(clampMediaFrameNumber(13, 12), 12);
+  assert.throws(() => clampMediaFrameNumber(1, 0), /produced no frames/);
 });
 
 test("studio monitor previews expose deterministic media seeking", () => {
@@ -133,6 +164,20 @@ test("studio monitor previews expose deterministic media seeking", () => {
   assert.match(html, /mediaContext\.drawImage/);
   assert.match(html, /scheduleInteractiveSeek/);
   assert.match(html, /A Dailies video inside a Dailies video/);
+});
+
+test("Macintosh studio previews expose period-inspired window and transport chrome", () => {
+  const timeline = compileTimeline(parseDemoMarkdown(
+    "/repo/demos/dailies/directors-cut.demo.md",
+    MEDIA_SOURCE.replace("theme: cinema", "theme: macintosh"),
+  ));
+  const html = renderPreviewHtml(timeline);
+
+  assert.match(html, /theme-macintosh/);
+  assert.match(html, /class="menu-bar"/);
+  assert.match(html, /class="monitor-transport"/);
+  assert.match(html, /Dailies Director/);
+  assert.match(html, /aspect-ratio:\s*16\s*\/\s*9/);
 });
 
 test("the set registry exposes the composable built-in presets", () => {

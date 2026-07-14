@@ -195,7 +195,7 @@ async function sampleFrames(videoPath, timeline) {
   const frameDir = path.join(path.dirname(videoPath), "frames", base);
   await rm(frameDir, { recursive: true, force: true });
   await mkdir(frameDir, { recursive: true });
-  const sampleSeconds = [0.25, 0.45, 0.82].map((ratio) => Math.max(1, Math.round(((timeline.durationMs || 1) / 1000) * ratio)));
+  const sampleSeconds = [0.25, 0.45, 0.82, 0.96].map((ratio) => Math.max(1, Math.round(((timeline.durationMs || 1) / 1000) * ratio)));
   const frames = [];
   for (const seconds of sampleSeconds) {
     const framePath = path.join(frameDir, `${base}-${String(seconds).padStart(2, "0")}s.webp`);

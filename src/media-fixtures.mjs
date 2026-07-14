@@ -8,7 +8,7 @@ const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 
 const MEDIA_FITS = new Set(["contain", "cover"]);
 const MEDIA_PANELS = new Set(["monitor", "stage"]);
 const MEDIA_TRANSITIONS = new Set(["cut", "fade"]);
-const THEMES = new Set(["dark", "cinema", "light"]);
+const THEMES = new Set(["dark", "cinema", "light", "macintosh"]);
 
 export function validateMediaData(data, index = 0) {
   if (!data || data.parseError) {
@@ -60,7 +60,7 @@ export function validateMediaData(data, index = 0) {
 export function validateProductionConfig(frontmatter) {
   const theme = frontmatter.theme || "dark";
   if (!THEMES.has(theme)) {
-    throw new Error("theme must be dark, cinema, or light");
+    throw new Error("theme must be dark, cinema, light, or macintosh");
   }
 
   const production = { theme };
