@@ -6,9 +6,9 @@ Dailies treats Copilot like the director/operator of a demo. The agent can draft
 
 ## Watch Dailies direct itself
 
-<video src="assets/demo/dailies-inception.mp4" controls playsinline title="Dailies Director's Cut"></video>
+[![Watch the Dailies Director's Cut](assets/demo/dailies-inception-poster.png)](assets/demo/dailies-inception.mp4)
 
-[Open the Director's Cut directly](assets/demo/dailies-inception.mp4) if the player is unavailable.
+[Watch the Director's Cut with audio](assets/demo/dailies-inception.mp4).
 
 ## First use case
 
