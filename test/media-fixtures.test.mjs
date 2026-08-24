@@ -205,8 +205,11 @@ test("full-screen media uses the stage panel contract", () => {
   assert.match(html, /display: none/);
 });
 
-test("fixture terminal commands allow only bounded Dailies npm scripts", () => {
+test("fixture terminal commands allow only bounded, non-mutating commands", () => {
   assert.equal(terminalCommandAllowed("relay list"), true);
+  assert.equal(terminalCommandAllowed("gh hush --dry-run"), true);
+  assert.equal(terminalCommandAllowed("gh hush --confirm"), false);
+  assert.equal(terminalCommandAllowed("gh hush"), false);
   assert.equal(terminalCommandAllowed("npm run check"), true);
   assert.equal(terminalCommandAllowed("npm run capture:live -- examples/live-app-capture/textedit-story.capture.json --approve"), true);
   assert.equal(terminalCommandAllowed("npm run render:candidate -- demos/dailies/live-app-capture.demo.md"), true);
